@@ -1,0 +1,7 @@
+Run_s;treatment
+1HipotalamoPO1_S25;PO
+2HipotalamoPO2_S26;PO
+3HipotalamoPO5_S27;PO
+4HipotalamoINTPO12_S28;INTPO
+5HipotalamoINTPO14_S29;INTPO
+6HipotalamoINTPO17_S30;INTPO
