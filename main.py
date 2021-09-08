@@ -10,8 +10,12 @@ def run_kallisto(args: argparse.Namespace):
             args.dir[0] + "/" + sample + args.complement[0] + ".fq.gz", \
             args.dir[0] + "/" + sample + args.complement[1] + ".fq.gz"] \
             , capture_output=True, text=True)
-        if o.stdout: logging.info(o.stdout)
-        if o.stderr: logging.info(o.stderr)
+        if o.stdout: 
+            print(o.stdout)
+            logging.info(o.stdout)
+        if o.stderr: 
+            print(o.stderr)
+            logging.info(o.stderr)
 
     return print("Finished!")
 

@@ -1,7 +1,9 @@
 #if (!requireNamespace("BiocManager", quietly = TRUE))
 #  install.packages("BiocManager")
 #BiocManager::install(version = "3.13")
-#BiocManager::install("biomaRt")
+#BiocManager::install("biomaRt", "rhdf5")
+#install.packages("devtools")
+#devtools::install_github("pachterlab/sleuth")
 
 suppressMessages({
   library("sleuth")
@@ -10,18 +12,25 @@ suppressMessages({
 })
 
 getwd()
-metadata <- read.table("kallisto/metadata.txt", sep=";", header=T, stringsAsFactors = F)
+
+# Start metadata and build paths to abundance.h5 files
+metadata <- read.table("resultados_kallisto_sleuth/metadata.txt", sep=";", header=T, stringsAsFactors = F)
 metadata <- dplyr::mutate(metadata, 
-                          path=file.path("kallisto", "results", "hipotalamo",
+                          path=file.path("resultados_kallisto_sleuth", "results", "hipotalamo",
                                          Run_s, "abundance.h5"))
 metadata <- dplyr::rename(metadata, sample=Run_s)
+
+# Select base (control) group that comaprison will be made with
+metadata$treatment <- as.factor(metadata$treatment)
+metadata$treatment <- relevel(metadata$treatment, "PO")
+factor(metadata$treatment)
+
 head(metadata)
 
+# Start biomaRt annotation genes from ensembl
 mart <- biomaRt::useMart(biomart = "ENSEMBL_MART_ENSEMBL",
                          dataset = "mmusculus_gene_ensembl",
                          host = "ensembl.org")
-# host = "dec2015.archive.ensembl.org")
-# host = "ensembl.org")
 ttg <- biomaRt::getBM(
   attributes = c("ensembl_transcript_id", "transcript_version",
                  "ensembl_gene_id", "external_gene_name", "description",
@@ -32,42 +41,37 @@ ttg <- dplyr::rename(ttg, target_id = ensembl_transcript_id,
 ttg <- dplyr::select(ttg, c('target_id', 'ens_gene', 'ext_gene'))
 head(ttg)
 
-
+# Build Sleuth object and use transformation function so beta will be log2FC
 r <- sleuth_prep(metadata, ~ treatment, 
                  transformation_function = function(x) log2(x + 0.5))
+
+# Fit the object with full or reduced formula
 r <- sleuth_fit(r)
 r <- sleuth_fit(r, ~1, 'reduced')
 
+# Check possible models and tests
+models(r)
+tests(r)
+
+# Run likelihood-ratio test comparing the two models for more than 2 groups
 r <- sleuth_lrt(r, 'reduced', 'full')
-r <- sleuth_wt(r, paste0("treatmentPO"))	100
-
-res_wt <- sleuth_results(r, 'treatmentPO')
-res_wt_de <- dplyr::filter(res_wt, pval <= 0.05) # pval <= 0.05) qval <= 0.05)
-res_wt_de_ann <- dplyr::left_join(res_wt_de, ttg, by=c("target_id"))
-#nrow(res_wt_de_ann)
-#nrow(dplyr::filter(res_wt_de_ann, !is.na(ext_gene)))
-
 res_lrt <- sleuth_results(r, 'reduced:full', test_type = 'lrt')
 res_lrt_de <- dplyr::filter(res_lrt, pval <= 0.05)
 res_lrt_de_ann <- dplyr::left_join(res_lrt_de, ttg, by=c("target_id"))
-#head(res_lrt_de_ann)
+head(dplyr::filter(res_lrt_de_ann, !is.na(ext_gene)))
+nrow(dplyr::filter(res_lrt_de_ann, !is.na(ext_gene)))
 
-#head(kallisto_table(r))
-#head(r)
-#tests(r)
-
-#res <- merge(res_lrt, res_wt[, c('target_id', 'b', 'se_b', 'mean_obs')], on = 'target_id', sort = FALSE)
-
-#sleuth_live(r)
-
-# so <- sleuth_prep(metadata, target_mapping = ttg, 
-#                   aggregation_column = 'ens_gene', extra_bootstrap_summary=T)
-# 
-# so <- sleuth_fit(so, ~treatment, 'full')
-# 
-# so <- sleuth_wt(so, which_beta = "treatmentPO", which_model = 'full')
-# gene_table <- sleuth_results(so, test="treatmentPO", test_type = "wt", which_model = "full", show_all = F)
-# tests(so)
-# sleuth_live(so)
-# 
-# head(so)
+# Run Wald test comparing two groups
+r <- sleuth_wt(r, "treatmentINTPO")
+res_wt <- sleuth_results(r, 'treatmentINTPO')
+res_wt_de <- dplyr::filter(res_wt, pval <= 0.05) # pval <= 0.05) qval <= 0.05)
+res_wt_de_ann <- dplyr::left_join(res_wt_de, ttg, by=c("target_id"))
+head(dplyr::filter(res_wt_de_ann, !is.na(ext_gene)))
+nrow(dplyr::filter(res_wt_de_ann, !is.na(ext_gene)))
+table <- dplyr::filter(res_wt_de_ann, !is.na(ext_gene))
+table <- dplyr::filter(table, b <= -1 | b >= 1)
+write.table(x = as.data.frame(dplyr::select(table, c("target_id", "ens_gene", "ext_gene", "pval", "qval", "b", "se_b"))), 
+            file = "~/resultados_kallisto_sleuth/pairwise_POvsINTPO_annotated.txt", 
+            sep = '\t', 
+            quote = F,
+            row.names = F)
