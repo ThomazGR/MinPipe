@@ -4,20 +4,64 @@ from pathlib import Path
 from datetime import datetime
 import logging
 
-def run_kallisto(args: argparse.Namespace):
-    for sample in args.samples:
-        o = run(["kallisto", "quant", "-t", "4", "-b", "100","-i", "MMUM37.idx", "-o", args.output[0] + "/" + sample, \
-            args.dir[0] + "/" + sample + args.complement[0] + ".fq.gz", \
-            args.dir[0] + "/" + sample + args.complement[1] + ".fq.gz"] \
-            , capture_output=True, text=True)
-        if o.stdout: 
-            print(o.stdout)
-            logging.info(o.stdout)
-        if o.stderr: 
-            print(o.stderr)
-            logging.info(o.stderr)
+def check_index(path_index: str) -> bool:
+    if Path(path_index).is_file():
+        is_f = True
+    else:
+        is_f = False
 
-    return print("Finished!")
+    return is_f
+
+def create_index(args: argparse.Namespace):
+    idx = run(["kallisto", "index", args.idx_name + ".idx", \
+        args.genome[0]])
+
+    if idx.stdout:
+        print(idx.stdout)
+        logging.info(idx.stdout)
+    if idx.stderr:
+        print(idx.stderr)
+        logging.info(idx.stderr)
+
+    return
+
+def run_qctk(args: argparse.Namespace):
+    for sample in args.samples:
+        qc = run(["fastqc", "-o", args.output[0] + "/" + sample, "--no-extract", \
+            args.dir[0] + "/" + sample + args.complement[0] + ".fq.gz", \
+            args.dir[0] + "/" + sample + args.complement[1] + ".fq.gz"], \
+                capture_output=True, text=True)
+        if qc.stdout:
+            print(qc.stdout)
+            logging.info(qc.stdout)
+        if qc.stderr:
+            print(qc.stderr)
+            logging.info(qc.stderr)
+
+        trim = run(["trim_galore", "--quality", "20", "--fastqc", "--length", "25", "--paired", \
+            "--output-dir", args.output[0] + "/" + sample, \
+                args.dir[0] + "/" + sample + args.complement[0] + ".fq.gz", \
+                args.dir[0] + "/" + sample + args.complement[1] + ".fq.gz"], \
+                    capture_output=True, text=True)
+        if trim.stdout:
+            print(trim.stdout)
+            logging.info(trim.stdout)
+        if trim.stderr:
+            print(trim.stderr)
+            logging.info(trim.stderr)
+
+        kall = run(["kallisto", "quant", "-t", "4", "-b", "100","-i", "MMUM37.idx", "-o", args.output[0] + "/" + sample, \
+            args.dir[0] + "/" + sample + args.complement[0] + "_val_1.fq.gz", \
+            args.dir[0] + "/" + sample + args.complement[1] + "_val_2.fq.gz"] \
+            , capture_output=True, text=True)
+        if kall.stdout: 
+            print(kall.stdout)
+            logging.info(kall.stdout)
+        if kall.stderr: 
+            print(kall.stderr)
+            logging.info(kall.stderr)
+
+    return print("Finished pseudoalignment!")
 
 def read_samples(args: argparse.Namespace) -> dict:
     if len(args.complement) > 2:
