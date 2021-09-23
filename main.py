@@ -133,4 +133,4 @@ def arguments() -> argparse.Namespace:
 if __name__ == '__main__':
     arguments = arguments()
     fargs = read_samples(args=arguments)
-    run_kallisto(fargs)
+    run_qctk(fargs)

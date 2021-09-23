@@ -89,7 +89,7 @@ prepare.sleuth <- function(metadata){
   so <- sleuth_prep(metadata, ~ treatment, 
                           transformation_function = function(x) log2(x + 0.5))
   
-  # Fit the object with full or reduced formula
+  # Fit the object with full and reduced formula
   so <- sleuth_fit(so)
   so <- sleuth_fit(so, ~1, 'reduced')
   
@@ -100,12 +100,8 @@ run.lrt <- function(so, ttg){
   # Run likelihood-ratio test comparing the two models for more than 2 groups
   so <- sleuth_lrt(so, 'reduced', 'full')
   res_lrt <- sleuth_results(so, 'reduced:full', test_type = 'lrt')
-  res_lrt_de <- dplyr::filter(res_lrt, pval <= 0.05)
-  res_lrt_de_ann <- dplyr::left_join(res_lrt_de, ttg, by=c("target_id"))
+  res_lrt_de_ann <- dplyr::left_join(res_lrt, ttg, by=c("target_id"))
   res_lrt_de_ann_f <- dplyr::filter(res_lrt_de_ann, !is.na(ext_gene))
-  res_lrt_de_ann_f <- dplyr::filter(res_lrt_de_ann_f, b <= -1 | b >= 1)
-  head(dplyr::filter(res_lrt_de_ann_f, !is.na(ext_gene)))
-  nrow(dplyr::filter(res_lrt_de_ann_f, !is.na(ext_gene)))
   
   return(res_lrt_de_ann_f)
 }
@@ -142,7 +138,9 @@ run.volcano <- function(table){
     ggtitle(label = "Volcano Plot", subtitle = "Colored by fold-change direction") +
     geom_point(size = 2.5, alpha = 0.8, na.rm = T) +
     scale_color_manual(name = "Directionality",
-                       values = c(Increased = "#008B00", Decreased = "#CD4F39", nonsignificant = "darkgray")) +
+                       values = c(Increased = "#008B00", 
+                       Decreased = "#CD4F39", 
+                       nonsignificant = "darkgray")) +
     theme_bw(base_size = 14) + # change overall theme
     theme(legend.position = "right") + # change the legend
     xlab("logFC") + # Change X-Axis label
@@ -154,7 +152,8 @@ run.volcano <- function(table){
 }
 
 write <- function(table, path){
-  write.table(x = as.data.frame(dplyr::select(table, c("target_id", "ens_gene", "ext_gene", "pval", "qval", "b", "se_b"))), 
+  write.table(x = as.data.frame(dplyr::select(table, c("target_id", "ens_gene", 
+                                    "ext_gene", "pval", "qval", "b", "se_b"))), 
               file = path, 
               sep = '\t', 
               quote = F,
