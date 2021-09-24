@@ -6,15 +6,17 @@ import logging
 
 def check_index(path_index: str) -> bool:
     if Path(path_index).is_file():
-        is_f = True
+        pass
     else:
-        is_f = False
+        exit(f"No index file found on {path_index}")
 
-    return is_f
+    return None
 
 def create_index(args: argparse.Namespace):
-    idx = run(["kallisto", "index", args.idx_name + ".idx", \
-        args.genome[0]])
+    idx_name = args.transcript.split("/")[-1].split(".")[0]
+
+    idx = run(["kallisto", "index", args.index + idx_name + ".idx", \
+        args.transcript], capture_output=True, text=True)
 
     if idx.stdout:
         print(idx.stdout)
@@ -22,8 +24,8 @@ def create_index(args: argparse.Namespace):
     if idx.stderr:
         print(idx.stderr)
         logging.info(idx.stderr)
-
-    return
+    
+    return args.index + idx_name + ".idx"
 
 def run_qctk(args: argparse.Namespace):
     for sample in args.samples:
@@ -50,7 +52,7 @@ def run_qctk(args: argparse.Namespace):
             print(trim.stderr)
             logging.info(trim.stderr)
 
-        kall = run(["kallisto", "quant", "-t", "4", "-b", "100","-i", "MMUM37.idx", "-o", args.output[0] + "/" + sample, \
+        kall = run(["kallisto", "quant", "-t", "4", "-b", "100","-i", args.index, "-o", args.output[0] + "/" + sample, \
             args.dir[0] + "/" + sample + args.complement[0] + "_val_1.fq.gz", \
             args.dir[0] + "/" + sample + args.complement[1] + "_val_2.fq.gz"] \
             , capture_output=True, text=True)
@@ -94,10 +96,19 @@ def read_samples(args: argparse.Namespace) -> dict:
 
 def arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run Kallisto for every samples given.")
-    parser.add_argument("-s", "--samples", nargs="+", required=True, help="<Required> List of samples to iterate over", type=str)
-    parser.add_argument("-c", "--complement", nargs="+", required=False, help="<Optional> Complementary for paired-ended", type=str)
-    parser.add_argument("-o", "--output", nargs=1, required=True,help="<Required> Directory to output", type=str, metavar="dir/to/folder/output")
-    parser.add_argument("-d", "--dir", nargs=1, required=True, help="<Required> Directory to files", type=str, metavar="dir/to/files")
+    parser.add_argument("-s", "--samples", nargs="+", required=True, 
+        help="<Required> List of samples to iterate over", type=str)
+    parser.add_argument("-c", "--complement", nargs="+", required=False, 
+        help="<Optional> Complementary for paired-ended", type=str)
+    parser.add_argument("-o", "--output", nargs=1, required=True, 
+        help="<Required> Directory to output", type=str, metavar="dir/to/folder/output")
+    parser.add_argument("-d", "--dir", nargs=1, required=True, 
+        help="<Required> Directory to files", type=str, metavar="dir/to/files")
+    parser.add_argument("-i", "--index", nargs=1, required=True, 
+        help="<Required> Directory to index already built or path to build the index file", type=str)
+    parser.add_argument("-t", "--transcript", nargs=1, required=False, 
+        help="<Optional> Path to transcript file, has to be passed along with -i/--index")
+    
     args = parser.parse_args()
 
     # Creating and logging info for the current run
@@ -133,4 +144,13 @@ def arguments() -> argparse.Namespace:
 if __name__ == '__main__':
     arguments = arguments()
     fargs = read_samples(args=arguments)
+    if fargs.transcript and fargs.index:
+        idx = create_index(fargs)
+        check_index(idx)
+        fargs.index = idx
+    elif fargs.index and fargs.transcript is None:
+        check_index(fargs.index)
+    else:
+        exit("Neither index or transcript file has been passed")
+
     run_qctk(fargs)
