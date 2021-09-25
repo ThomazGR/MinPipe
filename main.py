@@ -1,11 +1,20 @@
-import argparse
+import argparse, logging, os
 from subprocess import run
 from pathlib import Path
 from datetime import datetime
-import logging
+from contextlib import contextmanager
 
 CURR_TIME = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
 ENDING = ['.fq.gz', '.fastq.gz', '.fastq', '.fq', '.fasta']
+
+@contextmanager
+def working_directory(directory):
+    owd = os.getcwd()
+    try:
+        os.chdir(directory)
+        yield directory
+    finally:
+        os.chdir(owd)
 
 def check_index(path_index: str) -> bool:
     if Path(path_index).is_file():
