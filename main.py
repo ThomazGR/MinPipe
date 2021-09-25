@@ -4,6 +4,9 @@ from pathlib import Path
 from datetime import datetime
 import logging
 
+CURR_TIME = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
+ENDING = ['.fq.gz', '.fastq.gz', '.fastq', '.fq', '.fasta']
+
 def check_index(path_index: str) -> bool:
     if Path(path_index).is_file():
         pass
@@ -12,9 +15,27 @@ def check_index(path_index: str) -> bool:
 
     return None
 
-def create_index(args: argparse.Namespace):
-    idx_name = args.transcript.split("/")[-1].split(".")[0]
+def add_fwd_slash(args: argparse.Namespace):
+    if any(end in args.index[0] for end in ENDING):
+        pass
+    elif not any(end in args.index[0] for end in ENDING) \
+        and args.index[0][-1] != "/":
+        args.index[0] += "/"
+    
+    if args.output[0][-1] != "/":
+        args.output[0] += "/"
+    
+    if args.dir[0][-1] != "/":
+        args.dir[0] += "/"
 
+    return args
+
+def create_index(args: argparse.Namespace):
+    if "/" in args.transcript[0]:
+        idx_name = args.transcript[0].split("/")[-1].split(".")[0]
+    else:
+        idx_name = args.transcript[0].split(".")[0]
+        
     idx = run(["kallisto", "index", args.index + idx_name + ".idx", \
         args.transcript], capture_output=True, text=True)
 
@@ -112,7 +133,7 @@ def arguments() -> argparse.Namespace:
     args = parser.parse_args()
 
     # Creating and logging info for the current run
-    logging.basicConfig(filename=datetime.now().strftime("%d-%m-%Y_%H-%M-%S") + ".log", filemode="a", \
+    logging.basicConfig(filename= CURR_TIME + ".log", filemode="a", \
         format='%(asctime)s %(message)s', datefmt='%d/%m/%Y %H:%M:%S', \
         level=logging.DEBUG)
     logging.info("Samples used: {0}".format(args.samples))
@@ -143,6 +164,7 @@ def arguments() -> argparse.Namespace:
 
 if __name__ == '__main__':
     arguments = arguments()
+    arguments = add_fwd_slash(arguments)
     fargs = read_samples(args=arguments)
     if fargs.transcript and fargs.index:
         idx = create_index(fargs)
