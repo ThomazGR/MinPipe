@@ -12,6 +12,11 @@ suppressMessages({
   library("dplyr")
   library("ggplot2")
   library("docopt")
+  library("clusterProfiler")
+  library("ReactomePA")
+  library("DOSE")
+  library("org.Mm.eg.db")
+  library("org.Hs.eg.db")
 })
 
 create.args <- function(){
@@ -37,8 +42,10 @@ create.args <- function(){
 start.metadata <- function(args){
   # Start metadata and build paths to abundance.h5 files
   metadata <- read.table(args[["--file"]], sep=";", header=T, stringsAsFactors = F)
+  setwd(path.expand("~/"))
+
   metadata <- dplyr::mutate(metadata, 
-                            path=file.path("results", "figado",
+                            path=file.path("resultados_kallisto_sleuth", "results", "hipotalamo",
                                             Run_s, "abundance.h5"))
   metadata <- dplyr::rename(metadata, sample=Run_s)
   
@@ -160,6 +167,76 @@ write <- function(table, path){
               row.names = F)
 }
 
+pathway.enrichment <- function(gene_list = NULL, organism = NULL, path = NULL){
+  # - - - - - - - - - - - - -
+  # Enrich with KEGG database
+  # - - - - - - - - - - - - -
+  if(is.null(gene_list)){stop("No gene list has been passed.")}
+  if(is.null(path)){stop("No path has been passed.")}
+  if(is.null(organism)){
+    stop("No organism passed. Needs to be either mmu or hsa.")
+  } else if(organism == "mmu"){
+    kegg_enrich <- enrichKEGG(gene = gene_list,
+                              organism = "mmu",
+                              pvalueCutoff = 0.05)
+  } else if(organism == "hsa"){
+    kegg_enrich <- enrichKEGG(gene = gene_list,
+                              organism = "hsa",
+                              pvalueCutoff = 0.05)
+  }
+  
+  print("Generate KEGG pathway results")
+  # Get table of results
+  kegg_table <- head(as.data.frame(kegg_enrich), n=10) %>% 
+    arrange(desc(-log10(pvalue)))
+  
+  # KEGG plot
+  kegg_bar <- ggplot(kegg_table, aes(x=reorder(Description, -log10(pvalue)), y=-log10(pvalue))) + 
+    geom_bar(stat='identity', fill="#6B2525") + 
+    geom_col(width=0.7) + 
+    labs(title="KEGG Enrichment Pathways", x="Termos de KEGG") + 
+    coord_flip()
+  
+  kegg_full <- as.data.frame(kegg_enrich) %>% arrange(desc(-log10(pvalue)))
+  write.table(kegg_full, paste0(path, "kegg_full_table.txt"), sep="\t", quote = F, row.names = F)
+  ggsave(paste0(path, "kegg_bar.png"), plot=kegg_bar, device="png")
+  print("Saved KEGG full table and bar plot")
+  
+  # - - - - - - - - - - - - -
+  # Enrich with GO
+  # - - - - - - - - - - - - -
+  print("Generate GO barplot")
+  if(is.null(organism)){
+    stop("No organism passed. Needs to be either mmu or hsa.")
+  } else if(organism == "mmu"){
+    go_enrich <- enrichGO(gene = df$entrez, 
+                          OrgDb = "org.Mm.eg.db",
+                          ont = "BP",
+                          pvalueCutoff = 0.05)
+  } else if(organism == "hsa"){
+    go_enrich <- enrichGO(gene = df$entrez, 
+                          OrgDb = "org.Hs.eg.db",
+                          ont = "BP",
+                          pvalueCutoff = 0.05)
+  }
+  
+  # Get table of results
+  go_table <- head(as.data.frame(go_enrich), n=10) %>% 
+    arrange(desc(-log10(pvalue)))
+  
+  # Plot results
+  go_bar <- ggplot(go_table, aes(x=reorder(Description, -log10(pvalue)), y=-log10(pvalue))) + 
+    geom_bar(stat='identity', fill="#157296") + 
+    geom_col(width=0.7) + 
+    labs(title="GO Biological Pathways", x="Termos de GO") + 
+    coord_flip()
+  
+  go_full <- as.data.frame(go_enrich) %>% arrange(desc(-log10(pvalue)))
+  write.table(go_full, paste0(path, "go_full_table.txt"), sep="\t", quote = F, row.names = F)
+  ggsave(paste0(path, "go_bar.png"), plot=go_bar, device="png")
+  print("Saved GO full table and bar plot")
+}
+
 # Main paths
 arg <- create.args()
 # Example args
@@ -210,7 +287,7 @@ for(i in 1:ncol(comb)){
   
   table <- run.wald(so, ann, paste0("treatment",gs[2]))
   
-  if(!args[["--no-volcano"]]){
+  if(!arg[["--no-volcano"]]){
     volcano <- run.volcano(table)
     ggsave(paste0(arg$path, "/volcano_", names, ".png"), plot=volcano, device="png")
     print(paste("Saved volcano for", names))
@@ -220,6 +297,18 @@ for(i in 1:ncol(comb)){
   res <- dplyr::filter(res, b <= -1 | b >= 1)
   write(res, path=paste0(arg$path, "/tabela_annotated_", names, ".txt"))
   print(paste("Saved table for", names))
+}
+
+if(ncol(comb) > 1){
+  print("Generating LRT table comparing all groups")
+  gs <- comb[,1]
+  metadata <- change.base(metadata = metadata, group = gs[1])
+  so <- prepare.sleuth(metadata)
+  table <- run.lrt(so, ann)
+  table <- dplyr::filter(table, pval <= 0.05)
+  table <- dplyr::filter(table, b <= -1 | b >= 1)
+  write(table, path = paste0(arg$path, "/tabela_annotated_LRT.txt"))
+  print("Saved LRT table")
 }
 
 #models(so)
