@@ -16,13 +16,13 @@ def working_directory(directory):
     finally:
         os.chdir(owd)
 
-def check_index(path_index: str) -> bool:
+def check_index(path_index: str):
     if Path(path_index).is_file():
         pass
     else:
         exit(f"No index file found on {path_index}")
 
-    return None
+    return 
 
 def add_fwd_slash(args: argparse.Namespace):
     if any(end in args.index[0] for end in ENDING):
@@ -31,11 +31,15 @@ def add_fwd_slash(args: argparse.Namespace):
         and args.index[0][-1] != "/":
         args.index[0] += "/"
     
-    if args.output[0][-1] != "/":
-        args.output[0] += "/"
-    
     if args.dir[0][-1] != "/":
         args.dir[0] += "/"
+
+    return args
+
+def build_directory(args: argparse.Namespace):
+    run(["mkdir", "-p", "results_" + CURR_TIME + "/{1_quality_control,2_trimmed_output,3_kallisto_results"])
+    d = run(["pwd"], capture_output=True, text=True)[0] + "/results_" + CURR_TIME + "/"
+    args.output[0] = d
 
     return args
 
@@ -59,9 +63,9 @@ def create_index(args: argparse.Namespace):
 
 def run_qctk(args: argparse.Namespace):
     for sample in args.samples:
-        qc = run(["fastqc", "-o", args.output[0] + "/" + sample, "--no-extract", \
-            args.dir[0] + "/" + sample + args.complement[0] + ".fq.gz", \
-            args.dir[0] + "/" + sample + args.complement[1] + ".fq.gz"], \
+        qc = run(["fastqc", "-o", args.output[0] + "1_quality_control", "--no-extract", \
+            args.dir[0] + sample + args.complement[0] + ".fq.gz", \
+            args.dir[0] + sample + args.complement[1] + ".fq.gz"], \
                 capture_output=True, text=True)
         if qc.stdout:
             print(qc.stdout)
@@ -71,9 +75,9 @@ def run_qctk(args: argparse.Namespace):
             logging.info(qc.stderr)
 
         trim = run(["trim_galore", "--quality", "20", "--fastqc", "--length", "25", "--paired", \
-            "--output-dir", args.output[0] + "/" + sample, \
-                args.dir[0] + "/" + sample + args.complement[0] + ".fq.gz", \
-                args.dir[0] + "/" + sample + args.complement[1] + ".fq.gz"], \
+            "--output-dir", args.output[0] + "2_trimmed_output", \
+                args.dir[0] + sample + args.complement[0] + ".fq.gz", \
+                args.dir[0] + sample + args.complement[1] + ".fq.gz"], \
                     capture_output=True, text=True)
         if trim.stdout:
             print(trim.stdout)
@@ -82,9 +86,10 @@ def run_qctk(args: argparse.Namespace):
             print(trim.stderr)
             logging.info(trim.stderr)
 
-        kall = run(["kallisto", "quant", "-t", "4", "-b", "100","-i", args.index, "-o", args.output[0] + "/" + sample, \
-            args.dir[0] + "/" + sample + args.complement[0] + "_val_1.fq.gz", \
-            args.dir[0] + "/" + sample + args.complement[1] + "_val_2.fq.gz"] \
+        kall = run(["kallisto", "quant", "-t", "4", "-b", "100", "-i", args.index, \
+            "-o", args.output[0] + "3_kallisto_output/" + sample, \
+            args.output[0] + "2_trimmed_output/" + sample + args.complement[0] + "_val_1.fq.gz", \
+            args.output[0] + "2_trimmed_output/" + sample + args.complement[1] + "_val_2.fq.gz"] \
             , capture_output=True, text=True)
         if kall.stdout: 
             print(kall.stdout)
@@ -112,8 +117,8 @@ def read_samples(args: argparse.Namespace) -> dict:
         exit()
 
     for file in args.samples:
-        if Path(args.dir[0] + "/" + file + args.complement[0] + ".fq.gz").is_file() \
-            & Path(args.dir[0] + "/" + file + args.complement[1] + ".fq.gz").is_file():
+        if Path(args.dir[0] + file + args.complement[0] + ".fq.gz").is_file() \
+            & Path(args.dir[0] + file + args.complement[1] + ".fq.gz").is_file():
                 pass
         else:
             logging.info("File {0} does not exist in {1}.".format(file, str(args.dir[0])))
@@ -130,8 +135,6 @@ def arguments() -> argparse.Namespace:
         help="<Required> List of samples to iterate over", type=str)
     parser.add_argument("-c", "--complement", nargs="+", required=False, 
         help="<Optional> Complementary for paired-ended", type=str)
-    parser.add_argument("-o", "--output", nargs=1, required=True, 
-        help="<Required> Directory to output", type=str, metavar="dir/to/folder/output")
     parser.add_argument("-d", "--dir", nargs=1, required=True, 
         help="<Required> Directory to files", type=str, metavar="dir/to/files")
     parser.add_argument("-i", "--index", nargs=1, required=True, 
@@ -148,12 +151,10 @@ def arguments() -> argparse.Namespace:
     logging.info("Samples used: {0}".format(args.samples))
     logging.info("Complements: {0}".format(args.complement))
     logging.info("Working directory for samples: {0}".format(args.dir))
-    logging.info("Output directory for results: {0}".format(args.output))
 
     print("Samples used: {0}".format(args.samples))
     print("Complements: {0}".format(args.complement))
     print("Working directory for samples: {0}".format(args.dir))
-    print("Output directory for results: {0}".format(args.output))
     
     r = False
     while r not in ['y', 'n']:
@@ -174,6 +175,7 @@ def arguments() -> argparse.Namespace:
 if __name__ == '__main__':
     arguments = arguments()
     arguments = add_fwd_slash(arguments)
+    arguments = build_directory(arguments)
     fargs = read_samples(args=arguments)
     if fargs.transcript and fargs.index:
         idx = create_index(fargs)

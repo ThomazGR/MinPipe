@@ -1,7 +1,7 @@
 #if (!requireNamespace("BiocManager", quietly = TRUE))
 #  install.packages("BiocManager")
 #BiocManager::install(version = "3.13")
-#BiocManager::install("biomaRt", "rhdf5")
+#BiocManager::install(c("biomaRt", "rhdf5"))
 #install.packages("devtools")
 #devtools::install_github("pachterlab/sleuth")
 
