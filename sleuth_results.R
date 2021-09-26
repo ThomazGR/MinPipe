@@ -198,8 +198,8 @@ pathway.enrichment <- function(gene_list = NULL, organism = NULL, path = NULL){
     coord_flip()
   
   kegg_full <- as.data.frame(kegg_enrich) %>% arrange(desc(-log10(pvalue)))
-  write.table(kegg_full, paste0(path, "kegg_full_table.txt"), sep="\t", quote = F, row.names = F)
-  ggsave(paste0(path, "kegg_bar.png"), plot=kegg_bar, device="png")
+  write.table(kegg_full, paste0(path, "/kegg_full_table.txt"), sep="\t", quote = F, row.names = F)
+  ggsave(paste0(path, "/kegg_bar.png"), plot=kegg_bar, device="png")
   print("Saved KEGG full table and bar plot")
   
   # - - - - - - - - - - - - -
@@ -232,9 +232,29 @@ pathway.enrichment <- function(gene_list = NULL, organism = NULL, path = NULL){
     coord_flip()
   
   go_full <- as.data.frame(go_enrich) %>% arrange(desc(-log10(pvalue)))
-  write.table(go_full, paste0(path, "go_full_table.txt"), sep="\t", quote = F, row.names = F)
-  ggsave(paste0(path, "go_bar.png"), plot=go_bar, device="png")
+  write.table(go_full, paste0(path, "/go_full_table.txt"), sep="\t", quote = F, row.names = F)
+  ggsave(paste0(path, "/go_bar.png"), plot=go_bar, device="png")
   print("Saved GO full table and bar plot")
+}
+
+entrez.list <- function(ensembl = NULL, organism = NULL){
+  if(is.null(organism)){
+    stop("Organism not passed. Needs to be either mmu or hsa.")
+  } else if(organism == "mmu"){
+    entrez <- mapIds(org.Mm.eg.db,
+                    keys=ensembl, #Column containing Ensembl gene ids
+                    column="ENTREZID",
+                    keytype="ENSEMBL",
+                    multiVals="first")
+  } else if(organism == "hsa"){
+    entrez <- mapIds(org.Hs.eg.db,
+                    keys=ensembl, #Column containing Ensembl gene ids
+                    column="ENTREZID",
+                    keytype="ENSEMBL",
+                    multiVals="first")
+  }
+  
+  return(entrez)
 }
 
 # Main paths
@@ -297,6 +317,7 @@ for(i in 1:ncol(comb)){
   res <- dplyr::filter(res, b <= -1 | b >= 1)
   write(res, path=paste0(arg$path, "/tabela_annotated_", names, ".txt"))
   print(paste("Saved table for", names))
+ 
 }
 
 if(ncol(comb) > 1){
@@ -309,6 +330,10 @@ if(ncol(comb) > 1){
   table <- dplyr::filter(table, b <= -1 | b >= 1)
   write(table, path = paste0(arg$path, "/tabela_annotated_LRT.txt"))
   print("Saved LRT table")
+  
+  pathway.enrichment(gene_list = entrez.list(table$ens_gene), organism = arg$organism, path = arg$path)
+} else if(ncol(comb) == 1){
+  pathway.enrichment(gene_list = entrez.list(res$ens_gene), organism = arg$organism, path = arg$path)
 }
 
 #models(so)
