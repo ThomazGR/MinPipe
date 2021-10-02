@@ -136,3 +136,9 @@ dmypy.json
 
 # vscode
 .vscode
+
+# samples
+/amostras
+
+*.fq.gz
+*.fastq.gz
