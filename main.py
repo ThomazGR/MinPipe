@@ -62,93 +62,49 @@ def create_index(args: argparse.Namespace):
     return args.index + idx_name + ".idx"
 
 def run_qctk(args: argparse.Namespace):
-    if not args.single:
-        for sample in args.samples:
-            qc = run(["fastqc", "-o", args.output[0] + "1_quality_control", "--no-extract",
-                args.dir[0] + sample + args.complement[0] + ".fq.gz",
-                args.dir[0] + sample + args.complement[1] + ".fq.gz"],
-                    capture_output=True, text=True)
-            if qc.stdout:
-                print(qc.stdout)
-                logging.info(qc.stdout)
-            if qc.stderr:
-                print(qc.stderr)
-                logging.info(qc.stderr)
-
-            trim = run(["trim_galore", "--quality", "20", "--fastqc", "--length", "25", "--paired",
-                "--output-dir", args.output[0] + "2_trimmed_output",
-                    args.dir[0] + sample + args.complement[0] + ".fq.gz",
-                    args.dir[0] + sample + args.complement[1] + ".fq.gz"],
-                        capture_output=True, text=True)
-            if trim.stdout:
-                print(trim.stdout)
-                logging.info(trim.stdout)
-            if trim.stderr:
-                print(trim.stderr)
-                logging.info(trim.stderr)
-
-            kall = run(["kallisto", "quant", "-t", args.threads[0], "-b", args.bootstrap[0],
-                "-i", args.index, "-o", args.output[0] + "3_kallisto_output/" + sample,
-                args.output[0] + "2_trimmed_output/" + sample + args.complement[0] + "_val_1.fq.gz",
-                args.output[0] + "2_trimmed_output/" + sample + args.complement[1] + "_val_2.fq.gz"],
+    for sample in args.samples:
+        qc = run(["fastqc", "-o", args.output[0] + "1_quality_control", "--no-extract", \
+            args.dir[0] + sample + args.complement[0] + ".fq.gz", \
+            args.dir[0] + sample + args.complement[1] + ".fq.gz"], \
                 capture_output=True, text=True)
-            if kall.stdout: 
-                print(kall.stdout)
-                logging.info(kall.stdout)
-            if kall.stderr: 
-                print(kall.stderr)
-                logging.info(kall.stderr)
+        if qc.stdout:
+            print(qc.stdout)
+            logging.info(qc.stdout)
+        if qc.stderr:
+            print(qc.stderr)
+            logging.info(qc.stderr)
 
-    elif args.single:
-        for sample in args.samples:
-            qc = run(["fastqc", "-o", args.output[0] + "1_quality_control", "--no-extract",
-                args.dir[0] + sample + ".fq.gz"],
+        trim = run(["trim_galore", "--quality", "20", "--fastqc", "--length", "25", "--paired", \
+            "--output-dir", args.output[0] + "2_trimmed_output", \
+                args.dir[0] + sample + args.complement[0] + ".fq.gz", \
+                args.dir[0] + sample + args.complement[1] + ".fq.gz"], \
                     capture_output=True, text=True)
-            if qc.stdout:
-                print(qc.stdout)
-                logging.info(qc.stdout)
-            if qc.stderr:
-                print(qc.stderr)
-                logging.info(qc.stderr)
+        if trim.stdout:
+            print(trim.stdout)
+            logging.info(trim.stdout)
+        if trim.stderr:
+            print(trim.stderr)
+            logging.info(trim.stderr)
 
-            trim = run(["trim_galore", "--quality", "20", "--fastqc", "--length", "25",
-                "--output-dir", args.output[0] + "2_trimmed_output",
-                    args.dir[0] + sample + ".fq.gz"],
-                        capture_output=True, text=True)
-            if trim.stdout:
-                print(trim.stdout)
-                logging.info(trim.stdout)
-            if trim.stderr:
-                print(trim.stderr)
-                logging.info(trim.stderr)
-
-            kall = run(["kallisto", "quant", "-t", args.threads[0], "-b", args.bootstrap[0],
-                "--single", "-i", args.index, "-o", args.output[0] + "3_kallisto_output/" + sample,
-                args.output[0] + "2_trimmed_output/" + sample + "_val_1.fq.gz"],
-                capture_output=True, text=True)
-            if kall.stdout: 
-                print(kall.stdout)
-                logging.info(kall.stdout)
-            if kall.stderr: 
-                print(kall.stderr)
-                logging.info(kall.stderr)
+        kall = run(["kallisto", "quant", "-t", "4", "-b", "100", "-i", args.index, \
+            "-o", args.output[0] + "3_kallisto_output/" + sample, \
+            args.output[0] + "2_trimmed_output/" + sample + args.complement[0] + "_val_1.fq.gz", \
+            args.output[0] + "2_trimmed_output/" + sample + args.complement[1] + "_val_2.fq.gz"] \
+            , capture_output=True, text=True)
+        if kall.stdout: 
+            print(kall.stdout)
+            logging.info(kall.stdout)
+        if kall.stderr: 
+            print(kall.stderr)
+            logging.info(kall.stderr)
 
     return print("Finished pseudoalignment!")
 
 def read_samples(args: argparse.Namespace) -> dict:
-    if args.simple & args.complement is not None:
-        logging.info("Single-ended analysis does not contain complements. \
-            Complements are for paired-ended (e.g. sample1_R1.fq.gz and sample1_R2.fq.gz)")
-        print("Single-ended analysis does not contain complements. \
-            Complements are for paired-ended (e.g. sample1_R1.fq.gz and sample1_R2.fq.gz)")
+    if len(args.complement) > 2:
+        logging.info("Complement (-c or --complement) argument has to be maximum of 2 for paired-ended reads.")
+        print("Complement (-c or --complement) argument has to be maximum of 2 for paired-ended reads.")
         exit()
-    elif not args.simple & args.complement is not None:
-        if len(args.complement) > 2:
-            logging.info("Complement (-c or --complement) argument has to be maximum \
-                of 2 for paired-ended reads.")
-            print("Complement (-c or --complement) argument has to be maximum \
-                of 2 for paired-ended reads.")
-            exit()
 
     if not Path(args.output[0]).is_dir():
         logging.info("Directory {0} does not exist.".format(args.output[0]))
@@ -160,23 +116,14 @@ def read_samples(args: argparse.Namespace) -> dict:
         print("Directory {0} does not exist.".format(args.dir[0]))
         exit()
 
-    if not args.simple:
-        for file in args.samples:
-            if Path(args.dir[0] + file + args.complement[0] + ".fq.gz").is_file() \
-                & Path(args.dir[0] + file + args.complement[1] + ".fq.gz").is_file():
-                    pass
-            else:
-                logging.info("File {0} does not exist in {1}.".format(file, str(args.dir[0])))
-                print("File {0} does not exist in {1}.".format(file, str(args.dir[0])))
-                exit()
-    elif args.simple:
-        for file in args.samples:
-            if Path(args.dir[0] + file + ".fq.gz").is_file():
+    for file in args.samples:
+        if Path(args.dir[0] + file + args.complement[0] + ".fq.gz").is_file() \
+            & Path(args.dir[0] + file + args.complement[1] + ".fq.gz").is_file():
                 pass
-            else:
-                logging.info("File {0} does not exist in {1}.".format(file, str(args.dir[0])))
-                print("File {0} does not exist in {1}.".format(file, str(args.dir[0])))
-                exit()
+        else:
+            logging.info("File {0} does not exist in {1}.".format(file, str(args.dir[0])))
+            print("File {0} does not exist in {1}.".format(file, str(args.dir[0])))
+            exit()
     
     print("All files exists. Continuing the analysis.")
 
@@ -194,13 +141,7 @@ def arguments() -> argparse.Namespace:
         help="<Required> Directory to index already built or path to build the index file", type=str)
     parser.add_argument("-t", "--transcript", nargs=1, required=False, 
         help="<Optional> Path to transcript file, has to be passed along with -i/--index")
-    parser.add_argument("--threads", nargs=1, required=False,
-        help="<Optional> Number of threads to be used in quantification for Kallisto. Default: 1.")
-    parser.add_argument("-b", "--bootstrap", nargs=1, required=False,
-        help="<Optional> Number of bootstrap samples. Default: 0.")
-    parser.add_argument("--single", action='store_true', required=False,
-        help="<Optional> Flag to indicate single-ended quantification without complements.")
-
+    
     args = parser.parse_args()
 
     # Creating and logging info for the current run
