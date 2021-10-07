@@ -5,7 +5,7 @@ from datetime import datetime
 from contextlib import contextmanager
 
 CURR_TIME = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
-ENDING = ['.fq.gz', '.fastq.gz', '.fastq', '.fq', '.fasta']
+ENDING = ['.fq.gz', '.fastq.gz', '.fastq', '.fq']
 
 @contextmanager
 def working_directory(directory):
@@ -27,24 +27,20 @@ def decide_format(args: argparse.Namespace):
     return args
 
 def check_index(path_index: str):
-    if Path(path_index[0]).is_file():
+    if Path(path_index).is_file():
         pass
     else:
         exit(f"No index file found on {path_index}")
 
     return 
 
-def add_fwd_slash(args: argparse.Namespace):
-    
-    
-    return args
-
 def build_directory(args: argparse.Namespace):
     run(["mkdir", "-p", "results_" + CURR_TIME + "/1_quality_control"])
     run(["mkdir", "-p", "results_" + CURR_TIME + "/2_trimmed_output"])
     run(["mkdir", "-p", "results_" + CURR_TIME + "/3_kallisto_results"])
 
-    d = str(run(["pwd"], capture_output=True, text=True).stdout.rstrip("\n")) + "/results_" + CURR_TIME + "/"
+    #str(run(["pwd"], capture_output=True, text=True).stdout.rstrip("\n")) +
+    d = "/results_" + CURR_TIME + "/"
 
     args.output = d
     return args
@@ -55,8 +51,8 @@ def create_index(args: argparse.Namespace):
     else:
         idx_name = args.transcript[0].split(".")[0]
         
-    idx = run(["kallisto", "index", args.index + idx_name + ".idx", \
-        args.transcript], capture_output=True, text=True)
+    idx = run(["kallisto", "index", "index/" + idx_name + ".idx",
+        "index/" + args.transcript[0]], capture_output=True, text=True)
 
     if idx.stdout:
         print(idx.stdout)
@@ -65,14 +61,16 @@ def create_index(args: argparse.Namespace):
         print(idx.stderr)
         logging.info(idx.stderr)
     
-    return args.index + idx_name + ".idx"
+    args.index = "index/" + idx_name + ".idx"
+
+    return args
 
 def run_qctk(args: argparse.Namespace):
     if not args.single:
         for sample in args.samples:
             qc = run(["fastqc", "-o", args.output + "1_quality_control", "--no-extract",
-                "input/" + sample + args.complement[0] + ".fastq.gz",
-                "input/" + sample + args.complement[1] + ".fastq.gz"],
+                "input/" + sample + args.complement[0] + args.format,
+                "input/" + sample + args.complement[1] + args.format],
                     capture_output=True, text=True)
             if qc.stdout:
                 print(qc.stdout)
@@ -83,8 +81,8 @@ def run_qctk(args: argparse.Namespace):
 
             trim = run(["trim_galore", "--quality", "20", "--fastqc", "--length", "25", "--paired",
                 "-o", args.output + "2_trimmed_output",
-                    "input/" + sample + args.complement[0] + ".fastq.gz",
-                    "input/" + sample + args.complement[1] + ".fastq.gz"],
+                    "input/" + sample + args.complement[0] + args.format,
+                    "input/" + sample + args.complement[1] + args.format],
                         capture_output=True, text=True)
             if trim.stdout:
                 print(trim.stdout)
@@ -95,8 +93,8 @@ def run_qctk(args: argparse.Namespace):
 
             kall = run(["kallisto", "quant", "-t", args.threads[0], "-b", args.bootstrap[0],
                 "-i", args.index, "-o", args.output + "3_kallisto_output/" + sample,
-                args.output + "2_trimmed_output/" + sample + args.complement[0] + "_val_1.fastq.gz",
-                args.output + "2_trimmed_output/" + sample + args.complement[1] + "_val_2.fastq.gz"],
+                args.output + "2_trimmed_output/" + sample + args.complement[0] + "_val_1" + args.format,
+                args.output + "2_trimmed_output/" + sample + args.complement[1] + "_val_2" + args.format],
                 capture_output=True, text=True)
             if kall.stdout: 
                 print(kall.stdout)
@@ -108,7 +106,7 @@ def run_qctk(args: argparse.Namespace):
     elif args.single:
         for sample in args.samples:
             qc = run(["fastqc", "-o", args.output + "1_quality_control", "--no-extract",
-                "input/" + sample + ".fastq.gz"],
+                "input/" + sample + args.format],
                     capture_output=True, text=True)
             if qc.stdout:
                 print(qc.stdout)
@@ -119,7 +117,7 @@ def run_qctk(args: argparse.Namespace):
 
             trim = run(["trim_galore", "--quality", "20", "--fastqc", "--length", "25",
                 "-o", args.output + "2_trimmed_output",
-                    "input/" + sample + ".fastq.gz"],
+                    "input/" + sample + args.format],
                         capture_output=True, text=True)
             if trim.stdout:
                 print(trim.stdout)
@@ -130,7 +128,7 @@ def run_qctk(args: argparse.Namespace):
 
             kall = run(["kallisto", "quant", "-t", args.threads[0], "-b", args.bootstrap[0],
                 "--single", "-i", args.index, "-o", args.output + "3_kallisto_output/" + sample,
-                args.output + "2_trimmed_output/" + sample + "_trimmed.fastq.gz"],
+                args.output + "2_trimmed_output/" + sample + "_trimmed" + args.format],
                 capture_output=True, text=True)
             if kall.stdout: 
                 print(kall.stdout)
@@ -158,8 +156,8 @@ def read_samples(args: argparse.Namespace) -> dict:
 
     if not args.single:
         for file in args.samples:
-            if Path("input/" + file + args.complement[0] + ".fastq.gz").is_file() \
-                and Path("input/" + file + args.complement[1] + ".fastq.gz").is_file():
+            if Path("input/" + file + args.complement[0] + args.format).is_file() \
+                and Path("input/" + file + args.complement[1] + args.format).is_file():
                     pass
             else:
                 logging.info(f"File {file} does not exist in input/ folder.")
@@ -167,7 +165,7 @@ def read_samples(args: argparse.Namespace) -> dict:
                 exit()
     elif args.single:
         for file in args.samples:
-            if Path("input/" + file + ".fastq.gz").is_file():
+            if Path("input/" + file + args.format).is_file():
                 pass
             else:
                 logging.info(f"File {file} does not exist in input/ folder.")
@@ -189,10 +187,10 @@ def arguments() -> argparse.Namespace:
             it has to have a UNIQUE .idx file in `index` folder or it will raise an error.")
     parser.add_argument("-t", "--transcript", nargs=1, required=False, 
         help="<Optional> Name of the transcript file to be indexed.")
-    parser.add_argument("--threads", nargs=1, required=False,
+    parser.add_argument("--threads", nargs=1, required=False, default=["1"],
         help="<Optional> Number of threads to be used in quantification for Kallisto. Default: 1.")
-    parser.add_argument("-b", "--bootstrap", nargs=1, required=False,
-        help="<Optional> Number of bootstrap samples. Default: 0.")
+    parser.add_argument("-b", "--bootstrap", nargs=1, required=False, default=["100"],
+        help="<Optional> Number of bootstrap samples. Default: 100.")
     parser.add_argument("--single", action='store_true', required=False,
         help="<Optional> Flag to indicate single-ended quantification without complements.")
 
@@ -202,7 +200,8 @@ def arguments() -> argparse.Namespace:
         lst = run(["ls", "index/"], capture_output=True, text=True).stdout.split("\n")
         n = [k for k in lst if ".idx" in k]
         if n == 0:
-            print("A index file `.idx` needs to be inserted in the `index` folder.")
+            print("A index file `.idx` needs to be inserted in the `index` folder or a transcript file name \
+                needs to be passed to be consumed from the index folder.")
             exit()
         elif n > 1:
             print("No specific `.idx` file has been passed in the -i/--index parameters but many `.idx` \
@@ -210,6 +209,14 @@ def arguments() -> argparse.Namespace:
             exit()
         elif n == 1:
             args.index = "index/" + n[0]
+    elif args.index is None and args.transcript:
+        try:
+            args = create_index(args.transcript)
+            print("Index created")
+            check_index(args.index)
+        except Exception as ex:
+            print(ex)
+            exit()
 
     # Creating and logging info for the current run
     logging.basicConfig(filename= CURR_TIME + ".log", filemode="a", \
@@ -241,7 +248,6 @@ def arguments() -> argparse.Namespace:
 
 if __name__ == '__main__':
     arguments = arguments()
-    arguments = add_fwd_slash(arguments)
     arguments = build_directory(arguments)
     fargs = read_samples(args=arguments)
     if fargs.transcript and fargs.index:
