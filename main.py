@@ -1,30 +1,10 @@
-import argparse, logging, os
+import argparse, logging
 from subprocess import run
 from pathlib import Path
 from datetime import datetime
-from contextlib import contextmanager
+from src.utility import working_directory as wd, disk_usage as du, decide_format as decide
 
 CURR_TIME = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
-ENDING = ['.fq.gz', '.fastq.gz', '.fastq', '.fq']
-
-@contextmanager
-def working_directory(directory):
-    owd = os.getcwd()
-    try:
-        os.chdir(directory)
-        yield directory
-    finally:
-        os.chdir(owd)
-
-def decide_format(args: argparse.Namespace):
-    results = {}
-    for format in ENDING:
-        value = sum(format in s for s in run(["ls", "input/"], capture_output=True, text=True).stdout.split("\n"))
-        results.update({format:value})
-
-    args.format = max(results, key=results.get)
-
-    return args
 
 def check_index(path_index: str):
     if Path(path_index).is_file():
@@ -34,7 +14,7 @@ def check_index(path_index: str):
 
     return 
 
-def build_directory(args: argparse.Namespace):
+def build_directory(args: argparse.Namespace) -> argparse.Namespace:
     run(["mkdir", "-p", "results_" + CURR_TIME + "/1_quality_control"])
     run(["mkdir", "-p", "results_" + CURR_TIME + "/2_trimmed_output"])
     run(["mkdir", "-p", "results_" + CURR_TIME + "/3_kallisto_results"])
@@ -45,7 +25,7 @@ def build_directory(args: argparse.Namespace):
     args.output = d
     return args
 
-def create_index(args: argparse.Namespace):
+def create_index(args: argparse.Namespace) -> argparse.Namespace:
     if "/" in args.transcript[0]:
         idx_name = args.transcript[0].split("/")[-1].split(".")[0]
     else:
