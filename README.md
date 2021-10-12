@@ -1,6 +1,5 @@
-# MinPipe
+# MinPipe <a href="https://github.com/ThomazGR/MinPipe"> <img align="right" src="./img/minpipe.png"> </a>
 MinPipe is a minimal pipeline or workflow to be used for a series of RNA-seq data analysis from raw data to differentially expressed genes by using a mixture of pure Python, R and Shell script mainly for workspace management.
-<img style="float: right;" src="./img/minpipe.png">
 
 ### Installing
 - Install Conda or Miniconda by using the `conda.sh` inside `src` folder
