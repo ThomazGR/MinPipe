@@ -19,7 +19,6 @@ def build_directory(args: argparse.Namespace) -> argparse.Namespace:
     run(["mkdir", "-p", "results_" + CURR_TIME + "/2_trimmed_output"])
     run(["mkdir", "-p", "results_" + CURR_TIME + "/3_kallisto_results"])
 
-    #str(run(["pwd"], capture_output=True, text=True).stdout.rstrip("\n")) +
     d = "/results_" + CURR_TIME + "/"
 
     args.output = d
@@ -35,11 +34,9 @@ def create_index(args: argparse.Namespace) -> argparse.Namespace:
         "index/" + args.transcript[0]], capture_output=True, text=True)
 
     if idx.stdout:
-        print(idx.stdout)
-        logging.info(idx.stdout)
+        logger.info(idx.stdout)
     if idx.stderr:
-        print(idx.stderr)
-        logging.info(idx.stderr)
+        logger.info(idx.stderr)
     
     args.index = "index/" + idx_name + ".idx"
 
@@ -53,11 +50,9 @@ def run_qctk(args: argparse.Namespace):
                 "input/" + sample + args.complement[1] + args.format],
                     capture_output=True, text=True)
             if qc.stdout:
-                print(qc.stdout)
-                logging.info(qc.stdout)
+                logger.info(qc.stdout)
             if qc.stderr:
-                print(qc.stderr)
-                logging.info(qc.stderr)
+                logger.info(qc.stderr)
 
             trim = run(["trim_galore", "--quality", "20", "--fastqc", "--length", "25", "--paired",
                 "-o", args.output + "2_trimmed_output",
@@ -65,11 +60,9 @@ def run_qctk(args: argparse.Namespace):
                     "input/" + sample + args.complement[1] + args.format],
                         capture_output=True, text=True)
             if trim.stdout:
-                print(trim.stdout)
-                logging.info(trim.stdout)
+                logger.info(trim.stdout)
             if trim.stderr:
-                print(trim.stderr)
-                logging.info(trim.stderr)
+                logger.info(trim.stderr)
 
             kall = run(["kallisto", "quant", "-t", args.threads[0], "-b", args.bootstrap[0],
                 "-i", args.index, "-o", args.output + "3_kallisto_output/" + sample,
@@ -77,11 +70,9 @@ def run_qctk(args: argparse.Namespace):
                 args.output + "2_trimmed_output/" + sample + args.complement[1] + "_val_2" + args.format],
                 capture_output=True, text=True)
             if kall.stdout: 
-                print(kall.stdout)
-                logging.info(kall.stdout)
+                logger.info(kall.stdout)
             if kall.stderr: 
-                print(kall.stderr)
-                logging.info(kall.stderr)
+                logger.info(kall.stderr)
 
     elif args.single:
         for sample in args.samples:
@@ -89,48 +80,38 @@ def run_qctk(args: argparse.Namespace):
                 "input/" + sample + args.format],
                     capture_output=True, text=True)
             if qc.stdout:
-                print(qc.stdout)
-                logging.info(qc.stdout)
+                logger.info(qc.stdout)
             if qc.stderr:
-                print(qc.stderr)
-                logging.info(qc.stderr)
+                logger.info(qc.stderr)
 
             trim = run(["trim_galore", "--quality", "20", "--fastqc", "--length", "25",
                 "-o", args.output + "2_trimmed_output",
                     "input/" + sample + args.format],
                         capture_output=True, text=True)
             if trim.stdout:
-                print(trim.stdout)
-                logging.info(trim.stdout)
+                logger.info(trim.stdout)
             if trim.stderr:
-                print(trim.stderr)
-                logging.info(trim.stderr)
+                logger.info(trim.stderr)
 
             kall = run(["kallisto", "quant", "-t", args.threads[0], "-b", args.bootstrap[0],
                 "--single", "-i", args.index, "-o", args.output + "3_kallisto_output/" + sample,
                 args.output + "2_trimmed_output/" + sample + "_trimmed" + args.format],
                 capture_output=True, text=True)
             if kall.stdout: 
-                print(kall.stdout)
-                logging.info(kall.stdout)
+                logger.info(kall.stdout)
             if kall.stderr: 
-                print(kall.stderr)
-                logging.info(kall.stderr)
+                logger.info(kall.stderr)
 
     return print("Finished pseudoalignment!")
 
 def read_samples(args: argparse.Namespace) -> dict:
     if args.single and args.complement is not None:
-        logging.info("Single-ended analysis does not contain complements. \
-            Complements are for paired-ended (e.g. sample1_R1.fastq.gz and sample1_R2.fastq.gz)")
-        print("Single-ended analysis does not contain complements. \
+        logger.info("Single-ended analysis does not contain complements. \
             Complements are for paired-ended (e.g. sample1_R1.fastq.gz and sample1_R2.fastq.gz)")
         exit()
     elif not args.single and args.complement is not None:
         if len(args.complement) > 2:
-            logging.info("Complement (-c or --complement) argument has to be maximum \
-                of 2 for paired-ended reads.")
-            print("Complement (-c or --complement) argument has to be maximum \
+            logger.info("Complement (-c or --complement) argument has to be maximum \
                 of 2 for paired-ended reads.")
             exit()
 
@@ -140,16 +121,14 @@ def read_samples(args: argparse.Namespace) -> dict:
                 and Path("input/" + file + args.complement[1] + args.format).is_file():
                     pass
             else:
-                logging.info(f"File {file} does not exist in input/ folder.")
-                print(f"File {file} does not exist in input/ folder.")
+                logger.info(f"File {file} does not exist in input/ folder.")
                 exit()
     elif args.single:
         for file in args.samples:
             if Path("input/" + file + args.format).is_file():
                 pass
             else:
-                logging.info(f"File {file} does not exist in input/ folder.")
-                print(f"File {file} does not exist in input/ folder.")
+                logger.info(f"File {file} does not exist in input/ folder.")
                 exit()
     
     print("All files exists. Continuing the analysis.")
@@ -199,16 +178,12 @@ def arguments() -> argparse.Namespace:
             exit()
 
     # Creating and logging info for the current run
-    logging.basicConfig(filename= CURR_TIME + ".log", filemode="a", \
-        format='%(asctime)s %(message)s', datefmt='%d/%m/%Y %H:%M:%S', \
-        level=logging.DEBUG)
-    logging.info("Samples used: {0}".format(args.samples))
-    logging.info("Complements: {0}".format(args.complement))
-    logging.info("Working directory for samples: {0}".format(args.dir))
-
-    print("Samples used: {0}".format(args.samples))
-    print("Complements: {0}".format(args.complement))
-    print("Working directory for samples: {0}".format(args.dir))
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%d/%m/%Y %H:%M:%S")
+    logger = logging.getLogger()
+    logger.addHandler(logging.FileHandler(CURR_TIME + ".log", "a"))
+    logger.info("Samples used: {0}".format(args.samples))
+    logger.info("Complements: {0}".format(args.complement))
+    logger.info("Working directory for samples: {0}".format(args.dir))
     
     r = False
     while r not in ['y', 'n']:
@@ -229,6 +204,7 @@ def arguments() -> argparse.Namespace:
 if __name__ == '__main__':
     arguments = arguments()
     arguments = build_directory(arguments)
+    arguments = decide(arguments)
     fargs = read_samples(args=arguments)
     if fargs.transcript and fargs.index:
         idx = create_index(fargs)
