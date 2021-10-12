@@ -1,9 +1,10 @@
 #if (!requireNamespace("BiocManager", quietly = TRUE))
 #  install.packages("BiocManager")
 #BiocManager::install(version = "3.13")
-#BiocManager::install(c("biomaRt", "rhdf5"))
-#install.packages("devtools")
+#BiocManager::install(c("biomaRt", "rhdf5", "ggplot2","clusterProfiler","ReactomePA","dplyr","DOSE","org.Hs.eg.db","org.Mm.eg.db"))
+#install.packages(c("devtools", "docopt"))
 #devtools::install_github("pachterlab/sleuth")
+
 
 suppressMessages({
   library("sleuth")
