@@ -49,6 +49,6 @@ MinPipe is a minimal pipeline or workflow to be used for a series of RNA-seq dat
 - --single is the flag to indicate single-ended quantification without complements. An optional argument.
 
 ### How to work with Kallisto results using Sleuth R package
-- Run `Rscript sleuth_results.R [arguments]`
+- Run `Rscript runSleuth.R [arguments]`
 
 #### Arguments [UNDER CONSTRUCTION]
