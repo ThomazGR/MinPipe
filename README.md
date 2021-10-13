@@ -7,20 +7,38 @@ MinPipe is a minimal pipeline or workflow to be used for a series of RNA-seq dat
 - Activate Bioconda channel by running `packages.sh` inside `src` folder
 	- Run `chmod +x packages.sh` and then `bash packages.sh`, and follow the next steps
 - Install Bioconductor Manager
-	- Open an R session and run `if (!requireNamespace("BiocManager", quietly = TRUE))`
-	- And then `install.packages("BiocManager")`
-	- Next command `BiocManager::install(version = "3.13")`
+	- Open an R session and run:
+	```{r}
+	if (!requireNamespace("BiocManager", quietly = TRUE))
+		install.packages("BiocManager")
+	```
+	- And then 
+	```{r}
+	BiocManager::install(version = "3.13")
+	```
 - Via BiocManager install all packages used
-	- Run `BiocManager::install(c("biomaRt", "rhdf5", "ggplot2","clusterProfiler","ReactomePA","dplyr","DOSE","org.Hs.eg.db","org.Mm.eg.db"))`
+	- Run 
+	```{r}
+	BiocManager::install(c("biomaRt", "rhdf5", "ggplot2","clusterProfiler",
+	"dplyr","org.Hs.eg.db","org.Mm.eg.db"))
+	```
 - Install devtools R package and docopt for CLI R interface for args
-	- Run `install.packages(c("devtools", "docopt"))`
+	- Run
+	```{r}
+	install.packages(c("devtools", "docopt"))
+	```
 - Via devtools install Sleuth
-	- Install via this command `devtools::install_github("pachterlab/sleuth")`
+	- Install via this command 
+	```{r}
+	devtools::install_github("pachterlab/sleuth")
+	```
 
 ### Using the main pipeline
 - Run `python3 main.py -h` or `python3 main.py --help` for a help message
-- Example of paired-ended analysis without pre-built index: `python3 main.py -c _read1 _read2 -s AT1_G1 AT2_G1 AT1_G2 AT2_G2 -t MMU_39.fastq.gz --threads 4 -b 100`
-- Example of single-ended analysis with pre-built index: `python3 main.py -s AT1_G1 AT2_G1 AT1_G2 AT2_G2 -i MMU_39.idx --threads 4 -b 100`
+- Example of paired-ended analysis without pre-built index: 
+	- `python3 main.py -c _read1 _read2 -s AT1_G1 AT2_G1 AT1_G2 AT2_G2 -t MMU_39.fastq.gz --threads 4 -b 100`
+- Example of single-ended analysis with pre-built index: 
+	- `python3 main.py -s AT1_G1 AT2_G1 AT1_G2 AT2_G2 -i MMU_39.idx --threads 4 -b 100`
 #### Arguments
 - -c or --complement is the complement for paired-ended file names, if read 1 is always sample_R1.fq.gz and read 2 is sample_R2.fq.gz use `-c _R1 _R2` or `--complement _R1 _R2` so the code will iterate over samples with this complementary name.
 - -s or --samples is the list of samples used to integrate with complement and iterate in the directory, e.g. `-s sample1 sample2 sample3` or `--sample sample1 sample2 sample3` the program will iterate as `sample1_R1.fq.gz` and `sample1_R2.fq.gz` as paired-ended.
