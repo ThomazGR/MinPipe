@@ -1,10 +1,28 @@
 import argparse, logging
+from os import cpu_count
 from subprocess import run
 from pathlib import Path
 from datetime import datetime
 from src.utility import working_directory as wd, disk_usage as du, decide_format as decide
 
 CURR_TIME = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
+
+def picard_qc(args: argparse.Namespace):
+    logger = logging.getLogger("main.logger")
+
+    for sample in args.samples:
+        qsd = run(["picard", "QualityScoreDistribution", 
+        "-I", args.output + "3_kallisto_results/" + sample + "/pseudoalignments.bam",
+        "-O", args.output + "4_picard_qc/" + sample + ".txt",
+        "-CHART", args.output + "4_picard_qc/"  + sample + ".pdf"],
+        capture_output=True, text=True)
+        if qsd.stdout:
+            logger.info(qsd.stdout)
+        if qsd.stderr:
+            logger.info(qsd.stderr)
+
+        
+    return
 
 def check_index(path_index: str):
     if Path(path_index).is_file():
@@ -18,6 +36,7 @@ def build_directory(args: argparse.Namespace) -> argparse.Namespace:
     run(["mkdir", "-p", "results_" + CURR_TIME + "/1_quality_control"])
     run(["mkdir", "-p", "results_" + CURR_TIME + "/2_trimmed_output"])
     run(["mkdir", "-p", "results_" + CURR_TIME + "/3_kallisto_results"])
+    run(["mkdir", "-p", "results_" + CURR_TIME + "/4_picard_qc"])
 
     d = "/results_" + CURR_TIME + "/"
 
@@ -25,6 +44,7 @@ def build_directory(args: argparse.Namespace) -> argparse.Namespace:
     return args
 
 def create_index(args: argparse.Namespace) -> argparse.Namespace:
+    logger = logging.getLogger("main.logger")
     if "/" in args.transcript[0]:
         idx_name = args.transcript[0].split("/")[-1].split(".")[0]
     else:
@@ -43,6 +63,7 @@ def create_index(args: argparse.Namespace) -> argparse.Namespace:
     return args
 
 def run_qctk(args: argparse.Namespace):
+    logger = logging.getLogger("main.logger")
     if not args.single:
         for sample in args.samples:
             qc = run(["fastqc", "-o", args.output + "1_quality_control", "--no-extract",
@@ -66,6 +87,7 @@ def run_qctk(args: argparse.Namespace):
 
             kall = run(["kallisto", "quant", "-t", args.threads[0], "-b", args.bootstrap[0],
                 "-i", args.index, "-o", args.output + "3_kallisto_output/" + sample,
+                "--pseudobam",
                 args.output + "2_trimmed_output/" + sample + args.complement[0] + "_val_1" + args.format,
                 args.output + "2_trimmed_output/" + sample + args.complement[1] + "_val_2" + args.format],
                 capture_output=True, text=True)
@@ -94,6 +116,7 @@ def run_qctk(args: argparse.Namespace):
                 logger.info(trim.stderr)
 
             kall = run(["kallisto", "quant", "-t", args.threads[0], "-b", args.bootstrap[0],
+                "--pseudobam",
                 "--single", "-i", args.index, "-o", args.output + "3_kallisto_output/" + sample,
                 args.output + "2_trimmed_output/" + sample + "_trimmed" + args.format],
                 capture_output=True, text=True)
@@ -105,6 +128,7 @@ def run_qctk(args: argparse.Namespace):
     return print("Finished pseudoalignment!")
 
 def read_samples(args: argparse.Namespace) -> dict:
+    logger = logging.getLogger("main.logger")
     if args.single and args.complement is not None:
         logger.info("Single-ended analysis does not contain complements. \
             Complements are for paired-ended (e.g. sample1_R1.fastq.gz and sample1_R2.fastq.gz)")
@@ -179,7 +203,7 @@ def arguments() -> argparse.Namespace:
 
     # Creating and logging info for the current run
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%d/%m/%Y %H:%M:%S")
-    logger = logging.getLogger()
+    logger = logging.getLogger("main.logger")
     logger.addHandler(logging.FileHandler(CURR_TIME + ".log", "a"))
     logger.info("Samples used: {0}".format(args.samples))
     logger.info("Complements: {0}".format(args.complement))
