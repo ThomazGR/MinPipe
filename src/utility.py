@@ -1,5 +1,7 @@
 from contextlib import contextmanager
 import argparse
+from subprocess import run
+from pathlib import Path
 
 def disk_usage(path: str = "/") -> dict:
     import shutil
@@ -26,4 +28,23 @@ def decide_format(args: argparse.Namespace) -> argparse.Namespace:
 
     args.format = max(results, key=results.get)
 
+    return args
+
+def check_index(path_index: str):
+    if Path(path_index).is_file():
+        pass
+    else:
+        exit(f"No index file found on {path_index}")
+
+    return 
+
+def build_directory(args: argparse.Namespace, curr_time: str) -> argparse.Namespace:
+    run(["mkdir", "-p", "results_" + curr_time + "/1_quality_control"])
+    run(["mkdir", "-p", "results_" + curr_time + "/2_trimmed_output"])
+    run(["mkdir", "-p", "results_" + curr_time + "/3_kallisto_results"])
+    run(["mkdir", "-p", "results_" + curr_time + "/4_picard_qc"])
+
+    d = "/results_" + curr_time + "/"
+
+    args.output = d
     return args

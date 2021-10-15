@@ -3,9 +3,48 @@ from os import cpu_count
 from subprocess import run
 from pathlib import Path
 from datetime import datetime
-from src.utility import working_directory as wd, disk_usage as du, decide_format as decide
+from src.utility import (
+    working_directory as wd, 
+    disk_usage as du, 
+    decide_format as decide,
+    build_directory,
+    check_index
+    )
 
 CURR_TIME = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
+
+
+def download_hsa_trscript(args: argparse.Namespace) -> argparse.Namespace:
+    logger = logging.getLogger("main.logger")
+
+    try:
+        run([
+            "wget", "-P", "index/", "-c",
+            "http://ftp.ensembl.org/pub/release-104/fasta/homo_sapiens/cdna/Homo_sapiens.GRCh38.cdna.all.fa.gz",
+            "-O", "homo_sapiens_GRCh38_cdna.fa.gz"
+        ])
+    except Exception as exc:
+        logger.info(exc)
+        quit()
+    
+    args.transcript = "index/homo_sapiens_GRCh38_cdna.fa.gz"
+    return args
+
+def download_mmu_trscript(args: argparse.Namespace) -> argparse.Namespace:
+    logger = logging.getLogger("main.logger")
+
+    try:
+        run([
+            "wget", "-P", "index/", "-c",
+            "http://ftp.ensembl.org/pub/release-104/fasta/mus_musculus/cdna/Mus_musculus.GRCm39.cdna.all.fa.gz",
+            "-O", "mus_musculus_GRCm39_cdna.fa.gz"
+        ])
+    except Exception as exc:
+        logger.info(exc)
+        quit()
+
+    args.transcript = "index/mus_musculus_GRCm39_cdna.fa.gz"
+    return args
 
 def picard_qc(args: argparse.Namespace):
     logger = logging.getLogger("main.logger")
@@ -23,25 +62,6 @@ def picard_qc(args: argparse.Namespace):
 
         
     return
-
-def check_index(path_index: str):
-    if Path(path_index).is_file():
-        pass
-    else:
-        exit(f"No index file found on {path_index}")
-
-    return 
-
-def build_directory(args: argparse.Namespace) -> argparse.Namespace:
-    run(["mkdir", "-p", "results_" + CURR_TIME + "/1_quality_control"])
-    run(["mkdir", "-p", "results_" + CURR_TIME + "/2_trimmed_output"])
-    run(["mkdir", "-p", "results_" + CURR_TIME + "/3_kallisto_results"])
-    run(["mkdir", "-p", "results_" + CURR_TIME + "/4_picard_qc"])
-
-    d = "/results_" + CURR_TIME + "/"
-
-    args.output = d
-    return args
 
 def create_index(args: argparse.Namespace) -> argparse.Namespace:
     logger = logging.getLogger("main.logger")
@@ -227,7 +247,7 @@ def arguments() -> argparse.Namespace:
 
 if __name__ == '__main__':
     arguments = arguments()
-    arguments = build_directory(arguments)
+    arguments = build_directory(arguments, CURR_TIME)
     arguments = decide(arguments)
     fargs = read_samples(args=arguments)
     if fargs.transcript and fargs.index:
