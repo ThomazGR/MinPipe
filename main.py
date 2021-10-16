@@ -27,7 +27,8 @@ def download_hsa_trscript(args: argparse.Namespace) -> argparse.Namespace:
         logger.info(exc)
         quit()
     
-    args.transcript = "index/homo_sapiens_GRCh38_cdna.fa.gz"
+    logger.info("Homo sapiens transcript has been downloaded!")
+    args.transcript = ["homo_sapiens_GRCh38_cdna.fa.gz"]
     return args
 
 def download_mmu_trscript(args: argparse.Namespace) -> argparse.Namespace:
@@ -42,8 +43,9 @@ def download_mmu_trscript(args: argparse.Namespace) -> argparse.Namespace:
     except Exception as exc:
         logger.info(exc)
         quit()
-
-    args.transcript = "index/mus_musculus_GRCm39_cdna.fa.gz"
+    
+    logger.info("Mus musculus transcript has been downloaded!")
+    args.transcript = ["mus_musculus_GRCm39_cdna.fa.gz"]
     return args
 
 def picard_qc(args: argparse.Namespace):
@@ -189,7 +191,8 @@ def arguments() -> argparse.Namespace:
         help="<Optional> Name of the index file to be used in pseudoalignment. If no file has been passed \
             it has to have a UNIQUE .idx file in `index` folder or it will raise an error.")
     parser.add_argument("-t", "--transcript", nargs=1, required=False, 
-        help="<Optional> Name of the transcript file to be indexed.")
+        help="<Optional> Name of the transcript file to be indexed. `mmu` or `hsa` can be passed so \
+            the transcript will be downloaded automatically and index will be built.")
     parser.add_argument("--threads", nargs=1, required=False, default=["1"],
         help="<Optional> Number of threads to be used in quantification for Kallisto. Default: 1.")
     parser.add_argument("-b", "--bootstrap", nargs=1, required=False, default=["100"],
@@ -202,24 +205,43 @@ def arguments() -> argparse.Namespace:
     if args.index is None and args.transcript is None:
         lst = run(["ls", "index/"], capture_output=True, text=True).stdout.split("\n")
         n = [k for k in lst if ".idx" in k]
-        if n == 0:
+        if len(n) == 0:
             print("A index file `.idx` needs to be inserted in the `index` folder or a transcript file name \
                 needs to be passed to be consumed from the index folder.")
             exit()
-        elif n > 1:
+        elif len(n) > 1:
             print("No specific `.idx` file has been passed in the -i/--index parameters but many `.idx` \
                 files has been found on the `index` folder. Please specify the file.")
             exit()
-        elif n == 1:
+        elif len(n) == 1:
             args.index = "index/" + n[0]
     elif args.index is None and args.transcript:
-        try:
-            args = create_index(args.transcript)
-            print("Index created")
-            check_index(args.index)
-        except Exception as ex:
-            print(ex)
-            exit()
+        if any(fmt in args.transcript[0] for fmt in ['.fa', '.fa.gz', 
+        '.fastq', '.fastq.gz', 
+        '.fq', '.fq.gz']):
+            try:
+                args = create_index(args)
+                print("Index created")
+                check_index(args.index)
+            except Exception as ex:
+                print(ex)
+                exit()
+        else:
+            if args.transcript[0].lower() == "mmu":
+                args = download_mmu_trscript(args)
+                args = create_index(args)
+                print("Mmu transcript downloaded and index created.")
+                check_index(args.index)
+            elif args.transcript[0].lower() == "hsa":
+                args = download_hsa_trscript(args)
+                args = create_index(args)
+                print("Hsa transcript downloaded and index created.")
+                check_index(args.index)
+            else:
+                print("Sepecies not supported. Select hsa or mmu, or download your own transcript.")
+                exit()
+    else:
+        print("There is no index or transcript to work with.")
 
     # Creating and logging info for the current run
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%d/%m/%Y %H:%M:%S")
@@ -250,13 +272,5 @@ if __name__ == '__main__':
     arguments = build_directory(arguments, CURR_TIME)
     arguments = decide(arguments)
     fargs = read_samples(args=arguments)
-    if fargs.transcript and fargs.index:
-        idx = create_index(fargs)
-        check_index(idx)
-        fargs.index = idx
-    elif fargs.index and fargs.transcript is None:
-        check_index(fargs.index)
-    else:
-        exit("Neither index or transcript file has been passed")
 
     run_qctk(fargs)
