@@ -202,6 +202,8 @@ def arguments() -> argparse.Namespace:
 
     args = parser.parse_args()
 
+    # Chekcing if the index folder has a .idx file to be used, if no file it exits, if > 1 it exits
+    # If only 1 file is found, it uses as default index.
     if args.index is None and args.transcript is None:
         lst = run(["ls", "index/"], capture_output=True, text=True).stdout.split("\n")
         n = [k for k in lst if ".idx" in k]
@@ -238,7 +240,8 @@ def arguments() -> argparse.Namespace:
                 print("Hsa transcript downloaded and index created.")
                 check_index(args.index)
             else:
-                print("Sepecies not supported. Select hsa or mmu, or download your own transcript.")
+                print("Species or format not supported. \
+                    Select hsa or mmu, or download your own transcript.")
                 exit()
     else:
         print("There is no index or transcript to work with.")
