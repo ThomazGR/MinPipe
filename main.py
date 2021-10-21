@@ -1,5 +1,4 @@
 import argparse, logging
-from os import cpu_count
 from subprocess import run
 from pathlib import Path
 from datetime import datetime
