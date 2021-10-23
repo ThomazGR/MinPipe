@@ -60,7 +60,6 @@ def picard_qc(args: argparse.Namespace):
             logger.info(qsd.stdout)
         if qsd.stderr:
             logger.info(qsd.stderr)
-
         
     return
 
@@ -180,6 +179,54 @@ def read_samples(args: argparse.Namespace) -> dict:
 
     return args
 
+def check_idx_trans(args: argparse.Namespace) -> argparse.Namespace:
+    logger = logging.getLogger("main.logger")
+    # Chekcing if the index folder has a .idx file to be used, if no file it exits, if > 1 it exits
+    # If only 1 file is found, it uses as default index.
+    if args.index is None and args.transcript is None:
+        logger.info("No index or transcript has been passed")
+        exit()
+    elif args.index is None and args.transcript:
+        if any(fmt in args.transcript[0] for fmt in ['.fa', '.fa.gz', 
+        '.fastq', '.fastq.gz', 
+        '.fq', '.fq.gz']):
+            try:
+                args = create_index(args)
+                logger.info("Index created")
+                check_index(args.index)
+            except Exception as ex:
+                logger.info(ex)
+                exit()
+        else:
+            if args.transcript[0].lower() == "mmu":
+                args = download_mmu_trscript(args)
+                args = create_index(args)
+                logger.info("Mmu transcript downloaded and index created.")
+                check_index(args.index)
+            elif args.transcript[0].lower() == "hsa":
+                args = download_hsa_trscript(args)
+                args = create_index(args)
+                logger.info("Hsa transcript downloaded and index created.")
+                check_index(args.index)
+            else:
+                logger.info("Species or format not supported. \
+                    Select hsa or mmu, or download your own transcript.")
+                exit()
+    elif args.index and args.transcript is None:
+        try:
+            check_index(args.index)
+        except Exception as ex:
+            logger.info(ex)
+            exit()
+    else:
+        logger.info("You can only pass `--index` or `--transcript` argument. \
+            If both are passed the pipeline don't know if needs to build another index with \
+                the transcript passed or use the index without building a new one.")
+        exit()
+        
+
+    return args
+
 def arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run Kallisto for every samples given.")
     parser.add_argument("-s", "--samples", nargs="+", required=True, 
@@ -201,57 +248,17 @@ def arguments() -> argparse.Namespace:
 
     args = parser.parse_args()
 
-    # Chekcing if the index folder has a .idx file to be used, if no file it exits, if > 1 it exits
-    # If only 1 file is found, it uses as default index.
-    if args.index is None and args.transcript is None:
-        lst = run(["ls", "index/"], capture_output=True, text=True).stdout.split("\n")
-        n = [k for k in lst if ".idx" in k]
-        if len(n) == 0:
-            print("A index file `.idx` needs to be inserted in the `index` folder or a transcript file name \
-                needs to be passed to be consumed from the index folder.")
-            exit()
-        elif len(n) > 1:
-            print("No specific `.idx` file has been passed in the -i/--index parameters but many `.idx` \
-                files has been found on the `index` folder. Please specify the file.")
-            exit()
-        elif len(n) == 1:
-            args.index = "index/" + n[0]
-    elif args.index is None and args.transcript:
-        if any(fmt in args.transcript[0] for fmt in ['.fa', '.fa.gz', 
-        '.fastq', '.fastq.gz', 
-        '.fq', '.fq.gz']):
-            try:
-                args = create_index(args)
-                print("Index created")
-                check_index(args.index)
-            except Exception as ex:
-                print(ex)
-                exit()
-        else:
-            if args.transcript[0].lower() == "mmu":
-                args = download_mmu_trscript(args)
-                args = create_index(args)
-                print("Mmu transcript downloaded and index created.")
-                check_index(args.index)
-            elif args.transcript[0].lower() == "hsa":
-                args = download_hsa_trscript(args)
-                args = create_index(args)
-                print("Hsa transcript downloaded and index created.")
-                check_index(args.index)
-            else:
-                print("Species or format not supported. \
-                    Select hsa or mmu, or download your own transcript.")
-                exit()
-    else:
-        print("There is no index or transcript to work with.")
-
     # Creating and logging info for the current run
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%d/%m/%Y %H:%M:%S")
     logger = logging.getLogger("main.logger")
     logger.addHandler(logging.FileHandler(CURR_TIME + ".log", "a"))
-    logger.info("Samples used: {0}".format(args.samples))
-    logger.info("Complements: {0}".format(args.complement))
-    logger.info("Working directory for samples: {0}".format(args.dir))
+    logger.info(f"Samples used: {args.samples}")
+    logger.info(f"Complements: {args.complement}")
+    logger.info(f"Index: {args.index}")
+    logger.info(f"Transcript: {args.transcript}")
+    logger.info(f"Threads number: {args.threads[0]}")
+    logger.info(f"Bootstrap number: {args.bootstrap[0]}")
+    logger.info(f"Single ended: {args.single}")
     
     r = False
     while r not in ['y', 'n']:
@@ -260,17 +267,18 @@ def arguments() -> argparse.Namespace:
             if r == 'y':
                 pass
             elif r == 'n':
-                print("Arguments not right. Exiting.")
+                logger.info("Arguments not right. Exiting.")
                 exit()
         else:
             print("\nType `y` for Yes or `n` for No")
     
-    print("Every argument has been checked. Continuing the analysis.\n")
+    logger.info("Every argument has been checked. Continuing the analysis.\n")
     
     return args
 
 if __name__ == '__main__':
     arguments = arguments()
+    arguments = check_idx_trans(arguments)
     arguments = build_directory(arguments, CURR_TIME)
     arguments = decide(arguments)
     fargs = read_samples(args=arguments)
