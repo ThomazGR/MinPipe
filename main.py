@@ -60,8 +60,10 @@ def picard_qc(args: argparse.Namespace):
             logger.info(qsd.stdout)
         if qsd.stderr:
             logger.info(qsd.stderr)
-        
-    return
+    
+    logger.info("Finished Quality Score Distribution for all files!")
+
+    return True
 
 def create_index(args: argparse.Namespace) -> argparse.Namespace:
     logger = logging.getLogger("main.logger")
@@ -145,9 +147,11 @@ def run_qctk(args: argparse.Namespace):
             if kall.stderr: 
                 logger.info(kall.stderr)
 
-    return print("Finished pseudoalignment!")
+    logger.info("Finished pseudoalignment!")
 
-def read_samples(args: argparse.Namespace) -> dict:
+    return True
+
+def read_samples(args: argparse.Namespace) -> argparse.Namespace:
     logger = logging.getLogger("main.logger")
     if args.single and args.complement is not None:
         logger.info("Single-ended analysis does not contain complements. \
