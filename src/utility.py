@@ -44,7 +44,7 @@ def build_directory(args: argparse.Namespace, curr_time: str) -> argparse.Namesp
     run(["mkdir", "-p", "results_" + curr_time + "/3_kallisto_results"])
     run(["mkdir", "-p", "results_" + curr_time + "/4_picard_qc"])
 
-    d = "/results_" + curr_time + "/"
+    d = "results_" + curr_time + "/"
 
     args.output = d
     return args
