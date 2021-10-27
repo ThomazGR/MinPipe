@@ -52,10 +52,10 @@ def picard_qc(args: argparse.Namespace):
 
     for sample in args.samples:
         qsd = run(["picard", "QualityScoreDistribution", 
-        "-I", args.output + "3_kallisto_results/" + sample + "/pseudoalignments.bam",
-        "-O", args.output + "4_picard_qc/" + sample + ".txt",
-        "-CHART", args.output + "4_picard_qc/"  + sample + ".pdf"],
-        capture_output=True, text=True)
+            "-I", args.output + "3_kallisto_results/" + sample + "/pseudoalignments.bam",
+            "-O", args.output + "4_picard_qc/" + sample + ".txt",
+            "-CHART", args.output + "4_picard_qc/"  + sample + ".pdf"],
+            capture_output=True, text=True)
         if qsd.stdout:
             logger.info(qsd.stdout)
         if qsd.stderr:
@@ -106,12 +106,14 @@ def run_qctk(args: argparse.Namespace):
                 logger.info(trim.stdout)
             if trim.stderr:
                 logger.info(trim.stderr)
+            
+            run(["mkdir", "-p", f"results_{CURR_TIME}/3_kallisto_results/{sample}"])
 
             kall = run(["kallisto", "quant", "-t", args.threads[0], "-b", args.bootstrap[0],
-                "-i", args.index, "-o", args.output + "3_kallisto_output/" + sample,
+                "-i", "index/" + args.index[0], "-o", args.output + "3_kallisto_results/" + sample,
                 "--pseudobam",
-                args.output + "2_trimmed_output/" + sample + args.complement[0] + "_val_1" + args.format,
-                args.output + "2_trimmed_output/" + sample + args.complement[1] + "_val_2" + args.format],
+                args.output + "2_trimmed_output/" + sample + args.complement[0] + "_val_1.fq.gz",
+                args.output + "2_trimmed_output/" + sample + args.complement[1] + "_val_2.fq.gz"],
                 capture_output=True, text=True)
             if kall.stdout: 
                 logger.info(kall.stdout)
@@ -137,10 +139,12 @@ def run_qctk(args: argparse.Namespace):
             if trim.stderr:
                 logger.info(trim.stderr)
 
+            run(["mkdir", "-p", f"results_{CURR_TIME}/3_kallisto_results/{sample}"])
+
             kall = run(["kallisto", "quant", "-t", args.threads[0], "-b", args.bootstrap[0],
                 "--pseudobam",
-                "--single", "-i", args.index, "-o", args.output + "3_kallisto_output/" + sample,
-                args.output + "2_trimmed_output/" + sample + "_trimmed" + args.format],
+                "--single", "-i", "index/" + args.index[0], "-o", args.output + "3_kallisto_results/" + sample,
+                args.output + "2_trimmed_output/" + sample + "_trimmed.fq.gz"],
                 capture_output=True, text=True)
             if kall.stdout: 
                 logger.info(kall.stdout)
@@ -218,7 +222,7 @@ def check_idx_trans(args: argparse.Namespace) -> argparse.Namespace:
                 exit()
     elif args.index and args.transcript is None:
         try:
-            check_index(args.index)
+            check_index("index/" + args.index[0])
         except Exception as ex:
             logger.info(ex)
             exit()
@@ -249,6 +253,8 @@ def arguments() -> argparse.Namespace:
         help="<Optional> Number of bootstrap samples. Default: 100.")
     parser.add_argument("--single", action='store_true', required=False,
         help="<Optional> Flag to indicate single-ended quantification without complements.")
+    parser.add_argument("--ext-qc", action="store_true", required=False,
+        help="<Optional> Flag to indicate that will have extensive QC. **MAY NEED MORE FILES**")
 
     args = parser.parse_args()
 
@@ -263,7 +269,8 @@ def arguments() -> argparse.Namespace:
     logger.info(f"Threads number: {args.threads[0]}")
     logger.info(f"Bootstrap number: {args.bootstrap[0]}")
     logger.info(f"Single ended: {args.single}")
-    
+    logger.info(f"Extensive Quality Control: {args.ext_qc}")
+
     r = False
     while r not in ['y', 'n']:
         r = str(input("\nIs this correct? [y/n]\n")).lower()
@@ -283,8 +290,13 @@ def arguments() -> argparse.Namespace:
 if __name__ == '__main__':
     arguments = arguments()
     arguments = check_idx_trans(arguments)
+    print("Done checking Index or Transcript")
     arguments = build_directory(arguments, CURR_TIME)
     arguments = decide(arguments)
     fargs = read_samples(args=arguments)
-
     run_qctk(fargs)
+
+    if fargs.ext_qc:
+        picard_qc(fargs)
+    else:
+        pass
