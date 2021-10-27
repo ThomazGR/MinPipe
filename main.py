@@ -2,29 +2,71 @@ import argparse, logging
 from subprocess import run
 from pathlib import Path
 from datetime import datetime
-from src.utility import working_directory as wd, disk_usage as du, decide_format as decide
+from src.utility import (
+    working_directory as wd, 
+    disk_usage as du, 
+    decide_format as decide,
+    build_directory,
+    check_index
+    )
 
 CURR_TIME = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
 
-def check_index(path_index: str):
-    if Path(path_index).is_file():
-        pass
-    else:
-        exit(f"No index file found on {path_index}")
 
-    return 
+def download_hsa_trscript(args: argparse.Namespace) -> argparse.Namespace:
+    logger = logging.getLogger("main.logger")
 
-def build_directory(args: argparse.Namespace) -> argparse.Namespace:
-    run(["mkdir", "-p", "results_" + CURR_TIME + "/1_quality_control"])
-    run(["mkdir", "-p", "results_" + CURR_TIME + "/2_trimmed_output"])
-    run(["mkdir", "-p", "results_" + CURR_TIME + "/3_kallisto_results"])
-
-    d = "/results_" + CURR_TIME + "/"
-
-    args.output = d
+    try:
+        run([
+            "wget", "-P", "index/", "-c",
+            "http://ftp.ensembl.org/pub/release-104/fasta/homo_sapiens/cdna/Homo_sapiens.GRCh38.cdna.all.fa.gz",
+            "-O", "homo_sapiens_GRCh38_cdna.fa.gz"
+        ])
+    except Exception as exc:
+        logger.info(exc)
+        quit()
+    
+    logger.info("Homo sapiens transcript has been downloaded!")
+    args.transcript = ["homo_sapiens_GRCh38_cdna.fa.gz"]
     return args
 
+def download_mmu_trscript(args: argparse.Namespace) -> argparse.Namespace:
+    logger = logging.getLogger("main.logger")
+
+    try:
+        run([
+            "wget", "-P", "index/", "-c",
+            "http://ftp.ensembl.org/pub/release-104/fasta/mus_musculus/cdna/Mus_musculus.GRCm39.cdna.all.fa.gz",
+            "-O", "mus_musculus_GRCm39_cdna.fa.gz"
+        ])
+    except Exception as exc:
+        logger.info(exc)
+        quit()
+    
+    logger.info("Mus musculus transcript has been downloaded!")
+    args.transcript = ["mus_musculus_GRCm39_cdna.fa.gz"]
+    return args
+
+def picard_qc(args: argparse.Namespace):
+    logger = logging.getLogger("main.logger")
+
+    for sample in args.samples:
+        qsd = run(["picard", "QualityScoreDistribution", 
+            "-I", args.output + "3_kallisto_results/" + sample + "/pseudoalignments.bam",
+            "-O", args.output + "4_picard_qc/" + sample + ".txt",
+            "-CHART", args.output + "4_picard_qc/"  + sample + ".pdf"],
+            capture_output=True, text=True)
+        if qsd.stdout:
+            logger.info(qsd.stdout)
+        if qsd.stderr:
+            logger.info(qsd.stderr)
+    
+    logger.info("Finished Quality Score Distribution for all files!")
+
+    return True
+
 def create_index(args: argparse.Namespace) -> argparse.Namespace:
+    logger = logging.getLogger("main.logger")
     if "/" in args.transcript[0]:
         idx_name = args.transcript[0].split("/")[-1].split(".")[0]
     else:
@@ -43,6 +85,7 @@ def create_index(args: argparse.Namespace) -> argparse.Namespace:
     return args
 
 def run_qctk(args: argparse.Namespace):
+    logger = logging.getLogger("main.logger")
     if not args.single:
         for sample in args.samples:
             qc = run(["fastqc", "-o", args.output + "1_quality_control", "--no-extract",
@@ -63,11 +106,14 @@ def run_qctk(args: argparse.Namespace):
                 logger.info(trim.stdout)
             if trim.stderr:
                 logger.info(trim.stderr)
+            
+            run(["mkdir", "-p", f"results_{CURR_TIME}/3_kallisto_results/{sample}"])
 
             kall = run(["kallisto", "quant", "-t", args.threads[0], "-b", args.bootstrap[0],
-                "-i", args.index, "-o", args.output + "3_kallisto_output/" + sample,
-                args.output + "2_trimmed_output/" + sample + args.complement[0] + "_val_1" + args.format,
-                args.output + "2_trimmed_output/" + sample + args.complement[1] + "_val_2" + args.format],
+                "-i", "index/" + args.index[0], "-o", args.output + "3_kallisto_results/" + sample,
+                "--pseudobam",
+                args.output + "2_trimmed_output/" + sample + args.complement[0] + "_val_1.fq.gz",
+                args.output + "2_trimmed_output/" + sample + args.complement[1] + "_val_2.fq.gz"],
                 capture_output=True, text=True)
             if kall.stdout: 
                 logger.info(kall.stdout)
@@ -93,18 +139,24 @@ def run_qctk(args: argparse.Namespace):
             if trim.stderr:
                 logger.info(trim.stderr)
 
+            run(["mkdir", "-p", f"results_{CURR_TIME}/3_kallisto_results/{sample}"])
+
             kall = run(["kallisto", "quant", "-t", args.threads[0], "-b", args.bootstrap[0],
-                "--single", "-i", args.index, "-o", args.output + "3_kallisto_output/" + sample,
-                args.output + "2_trimmed_output/" + sample + "_trimmed" + args.format],
+                "--pseudobam",
+                "--single", "-i", "index/" + args.index[0], "-o", args.output + "3_kallisto_results/" + sample,
+                args.output + "2_trimmed_output/" + sample + "_trimmed.fq.gz"],
                 capture_output=True, text=True)
             if kall.stdout: 
                 logger.info(kall.stdout)
             if kall.stderr: 
                 logger.info(kall.stderr)
 
-    return print("Finished pseudoalignment!")
+    logger.info("Finished pseudoalignment!")
 
-def read_samples(args: argparse.Namespace) -> dict:
+    return True
+
+def read_samples(args: argparse.Namespace) -> argparse.Namespace:
+    logger = logging.getLogger("main.logger")
     if args.single and args.complement is not None:
         logger.info("Single-ended analysis does not contain complements. \
             Complements are for paired-ended (e.g. sample1_R1.fastq.gz and sample1_R2.fastq.gz)")
@@ -135,6 +187,54 @@ def read_samples(args: argparse.Namespace) -> dict:
 
     return args
 
+def check_idx_trans(args: argparse.Namespace) -> argparse.Namespace:
+    logger = logging.getLogger("main.logger")
+    # Chekcing if the index folder has a .idx file to be used, if no file it exits, if > 1 it exits
+    # If only 1 file is found, it uses as default index.
+    if args.index is None and args.transcript is None:
+        logger.info("No index or transcript has been passed")
+        exit()
+    elif args.index is None and args.transcript:
+        if any(fmt in args.transcript[0] for fmt in ['.fa', '.fa.gz', 
+        '.fastq', '.fastq.gz', 
+        '.fq', '.fq.gz']):
+            try:
+                args = create_index(args)
+                logger.info("Index created")
+                check_index(args.index)
+            except Exception as ex:
+                logger.info(ex)
+                exit()
+        else:
+            if args.transcript[0].lower() == "mmu":
+                args = download_mmu_trscript(args)
+                args = create_index(args)
+                logger.info("Mmu transcript downloaded and index created.")
+                check_index(args.index)
+            elif args.transcript[0].lower() == "hsa":
+                args = download_hsa_trscript(args)
+                args = create_index(args)
+                logger.info("Hsa transcript downloaded and index created.")
+                check_index(args.index)
+            else:
+                logger.info("Species or format not supported. \
+                    Select hsa or mmu, or download your own transcript.")
+                exit()
+    elif args.index and args.transcript is None:
+        try:
+            check_index("index/" + args.index[0])
+        except Exception as ex:
+            logger.info(ex)
+            exit()
+    else:
+        logger.info("You can only pass `--index` or `--transcript` argument. \
+            If both are passed the pipeline don't know if needs to build another index with \
+                the transcript passed or use the index without building a new one.")
+        exit()
+        
+
+    return args
+
 def arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run Kallisto for every samples given.")
     parser.add_argument("-s", "--samples", nargs="+", required=True, 
@@ -145,46 +245,32 @@ def arguments() -> argparse.Namespace:
         help="<Optional> Name of the index file to be used in pseudoalignment. If no file has been passed \
             it has to have a UNIQUE .idx file in `index` folder or it will raise an error.")
     parser.add_argument("-t", "--transcript", nargs=1, required=False, 
-        help="<Optional> Name of the transcript file to be indexed.")
+        help="<Optional> Name of the transcript file to be indexed. `mmu` or `hsa` can be passed so \
+            the transcript will be downloaded automatically and index will be built.")
     parser.add_argument("--threads", nargs=1, required=False, default=["1"],
         help="<Optional> Number of threads to be used in quantification for Kallisto. Default: 1.")
     parser.add_argument("-b", "--bootstrap", nargs=1, required=False, default=["100"],
         help="<Optional> Number of bootstrap samples. Default: 100.")
     parser.add_argument("--single", action='store_true', required=False,
         help="<Optional> Flag to indicate single-ended quantification without complements.")
+    parser.add_argument("--ext-qc", action="store_true", required=False,
+        help="<Optional> Flag to indicate that will have extensive QC. **MAY NEED MORE FILES**")
 
     args = parser.parse_args()
 
-    if args.index is None and args.transcript is None:
-        lst = run(["ls", "index/"], capture_output=True, text=True).stdout.split("\n")
-        n = [k for k in lst if ".idx" in k]
-        if n == 0:
-            print("A index file `.idx` needs to be inserted in the `index` folder or a transcript file name \
-                needs to be passed to be consumed from the index folder.")
-            exit()
-        elif n > 1:
-            print("No specific `.idx` file has been passed in the -i/--index parameters but many `.idx` \
-                files has been found on the `index` folder. Please specify the file.")
-            exit()
-        elif n == 1:
-            args.index = "index/" + n[0]
-    elif args.index is None and args.transcript:
-        try:
-            args = create_index(args.transcript)
-            print("Index created")
-            check_index(args.index)
-        except Exception as ex:
-            print(ex)
-            exit()
-
     # Creating and logging info for the current run
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%d/%m/%Y %H:%M:%S")
-    logger = logging.getLogger()
+    logger = logging.getLogger("main.logger")
     logger.addHandler(logging.FileHandler(CURR_TIME + ".log", "a"))
-    logger.info("Samples used: {0}".format(args.samples))
-    logger.info("Complements: {0}".format(args.complement))
-    logger.info("Working directory for samples: {0}".format(args.dir))
-    
+    logger.info(f"Samples used: {args.samples}")
+    logger.info(f"Complements: {args.complement}")
+    logger.info(f"Index: {args.index}")
+    logger.info(f"Transcript: {args.transcript}")
+    logger.info(f"Threads number: {args.threads[0]}")
+    logger.info(f"Bootstrap number: {args.bootstrap[0]}")
+    logger.info(f"Single ended: {args.single}")
+    logger.info(f"Extensive Quality Control: {args.ext_qc}")
+
     r = False
     while r not in ['y', 'n']:
         r = str(input("\nIs this correct? [y/n]\n")).lower()
@@ -192,27 +278,25 @@ def arguments() -> argparse.Namespace:
             if r == 'y':
                 pass
             elif r == 'n':
-                print("Arguments not right. Exiting.")
+                logger.info("Arguments not right. Exiting.")
                 exit()
         else:
             print("\nType `y` for Yes or `n` for No")
     
-    print("Every argument has been checked. Continuing the analysis.\n")
+    logger.info("Every argument has been checked. Continuing the analysis.\n")
     
     return args
 
 if __name__ == '__main__':
     arguments = arguments()
-    arguments = build_directory(arguments)
+    arguments = check_idx_trans(arguments)
+    print("Done checking Index or Transcript")
+    arguments = build_directory(arguments, CURR_TIME)
     arguments = decide(arguments)
     fargs = read_samples(args=arguments)
-    if fargs.transcript and fargs.index:
-        idx = create_index(fargs)
-        check_index(idx)
-        fargs.index = idx
-    elif fargs.index and fargs.transcript is None:
-        check_index(fargs.index)
-    else:
-        exit("Neither index or transcript file has been passed")
-
     run_qctk(fargs)
+
+    if fargs.ext_qc:
+        picard_qc(fargs)
+    else:
+        pass

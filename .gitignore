@@ -142,3 +142,6 @@ dmypy.json
 
 *.fq.gz
 *.fastq.gz
+
+# Hide all results from scripts
+results*/
