@@ -242,8 +242,8 @@ def arguments() -> argparse.Namespace:
     parser.add_argument("-c", "--complement", nargs="+", required=False, 
         help="<Optional> Complementary for paired-ended", type=str)
     parser.add_argument("-i", "--index", nargs=1, required=False,
-        help="<Optional> Name of the index file to be used in pseudoalignment. If no file has been passed \
-            it has to have a UNIQUE .idx file in `index` folder or it will raise an error.")
+        help="<Optional> Name of the index file to be used in pseudoalignment. Either `index` or \
+            `transcript`has to be passed.")
     parser.add_argument("-t", "--transcript", nargs=1, required=False, 
         help="<Optional> Name of the transcript file to be indexed. `mmu` or `hsa` can be passed so \
             the transcript will be downloaded automatically and index will be built.")
