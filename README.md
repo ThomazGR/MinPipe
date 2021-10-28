@@ -6,6 +6,17 @@ MinPipe is a minimal pipeline or workflow to be used for a series of RNA-seq dat
 	- Run `chmod +x conda.sh` and then `bash conda.sh`, and follow the next steps
 - Activate Bioconda channel by running `packages.sh` inside `src` folder
 	- Run `chmod +x packages.sh` and then `bash packages.sh`, and follow the next steps
+- Install R in [Linux](https://cran.r-project.org/bin/linux/) selecting your distro and following the steps provided by R Project
+	- If you are using a Ubuntu based distribution follow the next steps:
+		- Run
+		```
+		sudo apt update -qq
+		sudo apt install --no-install-recommends software-properties-common dirmngr
+		wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | sudo tee -a /etc/apt/trusted.gpg.d/cran_ubuntu_key.asc
+		sudo add-apt-repository "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"
+		sudo apt install --no-install-recommends r-base r-base-dev
+		sudo apt install libxml2-dev libcurl4-openssl-dev libssl-dev
+		```
 - Install Bioconductor Manager
 	- Open an R session and run:
 	```{r}
@@ -42,13 +53,22 @@ MinPipe is a minimal pipeline or workflow to be used for a series of RNA-seq dat
 #### Arguments
 - -c or --complement is the complement for paired-ended file names, if read 1 is always sample_R1.fq.gz and read 2 is sample_R2.fq.gz use `-c _R1 _R2` or `--complement _R1 _R2` so the code will iterate over samples with this complementary name.
 - -s or --samples is the list of samples used to integrate with complement and iterate in the directory, e.g. `-s sample1 sample2 sample3` or `--sample sample1 sample2 sample3` the program will iterate as `sample1_R1.fq.gz` and `sample1_R2.fq.gz` as paired-ended.
-- -i or --index is the name of the index file to be used in pseudoalignment. If no file has been passed it has to have a UNIQUE .idx file in `index` folder or it will raise an error, or it has to be passed the -t/--transcript argument to build a new index. It is an optional argument.
-- -t or --transcript is the name of the transcript file to be indexed if no index has been passed. Also an optional argument.
+- -i or --index is the Name of the index file to be used in pseudoalignment. Either `index` or `transcript` has to be passed.
+- -t or --transcript is the Name of the transcript file to be indexed. `mmu` or `hsa` can be passed so the transcript will be downloaded automatically and index will be built.
 - --threads refers to the number of threads to be used in quantification for Kallisto. Default: 1.
 - -b or --bootstrap is the number of bootstrap samples. Default: 100
 - --single is the flag to indicate single-ended quantification without complements. An optional argument.
+- --ext-qc is a flag to indicate that will have extensive QC. **MAY NEED MORE FILES**
 
 ### How to work with Kallisto results using Sleuth R package
 - Run `Rscript runSleuth.R [arguments]`
+- Pass `Rscript runSleuth.R -h` to see the help text
 
 #### Arguments [UNDER CONSTRUCTION]
+- -f or --file is the argument needed for the metadata.txt, passing as a path/to/metadata.txt
+- -g or --groups needs to be passed in order of base comparison comma-separated, e.g. CT,HFD,HFDCB
+- -o or --organism is the name of the organism to be used for gene annotation, either `mmu` or `hsa`, others will be supported lately
+- -p or --path is the directory to save all images and tables
+- -r or --results is the name of the results folder created by the main pipeline
+- --no-volcano is a flag that will force no volcano image creation
+
