@@ -1,0 +1,16 @@
+- params:
+    samples: 
+      - sample1
+      - sample2
+      - sample3
+      - sample4
+      - sample5
+    complement: 
+      - _read1
+      - _read2
+    index: MMUM37.idx
+    transcript: transcript.fa.gz
+    threads: 4
+    bootstrap: 100
+    single: true
+    ext-qc: false

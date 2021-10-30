@@ -15,5 +15,5 @@
     "threads": 4,
     "bootstrap": 100,
     "single": true,
-    "ext-qc": true
+    "ext-qc": false
 }
