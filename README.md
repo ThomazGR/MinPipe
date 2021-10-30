@@ -1,5 +1,5 @@
 # MinPipe <a href="https://github.com/ThomazGR/MinPipe"> <img align="right" src="./img/minpipe.png"> </a>
-MinPipe is a minimal pipeline or workflow to be used for a series of RNA-seq data analysis from raw data to differentially expressed genes by using a mixture of pure Python, R and Shell script mainly for workspace management.
+MinPipe is a minimal but fully logged pipeline or workflow to be used for a series of RNA-seq data analysis from raw data to differentially expressed genes by using a mixture of pure Python, R and Shell script mainly for workspace management.
 
 ### Installing
 - Install Conda or Miniconda by using the `conda.sh` inside `src` folder
@@ -63,8 +63,7 @@ MinPipe is a minimal pipeline or workflow to be used for a series of RNA-seq dat
 ### How to work with Kallisto results using Sleuth R package
 - Run `Rscript runSleuth.R [arguments]`
 - Pass `Rscript runSleuth.R -h` to see the help text
-
-#### Arguments [UNDER CONSTRUCTION]
+#### Arguments
 - -f or --file is the argument needed for the metadata.txt, passing as a path/to/metadata.txt
 - -g or --groups needs to be passed in order of base comparison comma-separated, e.g. CT,HFD,HFDCB
 - -o or --organism is the name of the organism to be used for gene annotation, either `mmu` or `hsa`, others will be supported lately

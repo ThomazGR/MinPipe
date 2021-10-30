@@ -1,7 +1,7 @@
 #if (!requireNamespace("BiocManager", quietly = TRUE))
 #  install.packages("BiocManager")
 #BiocManager::install(version = "3.13")
-#BiocManager::install(c("biomaRt", "rhdf5", "ggplot2","dplyr","DOSE","org.Hs.eg.db","org.Mm.eg.db"))
+#BiocManager::install(c("biomaRt", "rhdf5", "ggplot2","dplyr","clusterProfiler","org.Hs.eg.db","org.Mm.eg.db"))
 #install.packages(c("devtools", "docopt"))
 #devtools::install_github("pachterlab/sleuth")
 
@@ -22,7 +22,7 @@ create.args <- function(){
   "Sleuth implementation from Kallisto pseudoalignment
   
   Usage:
-    sleuth_results.R (-f --file) [-g --groups] [--no-volcano] [-o --organism] [-p --path]
+    runSleuth.R (-f --file) [-g --groups] [--no-volcano] [-o --organism] [-p --path] (-r --results)
   
   Options:
     -h --help     Show this screen.

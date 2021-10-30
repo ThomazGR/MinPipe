@@ -183,7 +183,7 @@ def read_samples(args: argparse.Namespace) -> argparse.Namespace:
                 logger.info(f"File {file} does not exist in input/ folder.")
                 exit()
     
-    print("All files exists. Continuing the analysis.")
+    logger.info("All files exists. Continuing the analysis.")
 
     return args
 
@@ -290,7 +290,6 @@ def arguments() -> argparse.Namespace:
 if __name__ == '__main__':
     arguments = arguments()
     arguments = check_idx_trans(arguments)
-    print("Done checking Index or Transcript")
     arguments = build_directory(arguments, CURR_TIME)
     arguments = decide(arguments)
     fargs = read_samples(args=arguments)
