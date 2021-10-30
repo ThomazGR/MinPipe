@@ -2,6 +2,7 @@ import argparse, logging
 from subprocess import run
 from pathlib import Path
 from datetime import datetime
+from src.json.support import json_parse
 from src.utility import (
     working_directory as wd, 
     disk_usage as du, 
@@ -237,8 +238,8 @@ def check_idx_trans(args: argparse.Namespace) -> argparse.Namespace:
 
 def arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run Kallisto for every samples given.")
-    parser.add_argument("-s", "--samples", nargs="+", required=True, 
-        help="<Required> List of samples to iterate over", type=str)
+    parser.add_argument("-s", "--samples", nargs="+", required=False, 
+        help="<Optional> List of samples to iterate over. All arguments can be passed as Json.", type=str)
     parser.add_argument("-c", "--complement", nargs="+", required=False, 
         help="<Optional> Complementary for paired-ended", type=str)
     parser.add_argument("-i", "--index", nargs=1, required=False,
@@ -255,13 +256,23 @@ def arguments() -> argparse.Namespace:
         help="<Optional> Flag to indicate single-ended quantification without complements.")
     parser.add_argument("--ext-qc", action="store_true", required=False,
         help="<Optional> Flag to indicate that will have extensive QC. **MAY NEED MORE FILES**")
-
-    args = parser.parse_args()
+    parser.add_argument("--json", nargs=1, required=False,
+        help="<Optional> Use a Json file to pass all the arguments instead of command line interface. \
+            See the parameters.json inside the examples folder to understand how to pass args.")
 
     # Creating and logging info for the current run
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%d/%m/%Y %H:%M:%S")
     logger = logging.getLogger("main.logger")
     logger.addHandler(logging.FileHandler(CURR_TIME + ".log", "a"))
+
+    args = parser.parse_args()
+    if Path(f"input/{args.json[0]}").is_file():
+        logger.info("Json file found. Proceeding with Json parser for arguments.")
+        lst_args = json_parse(args.json[0])
+        args = parser.parse_args(lst_args)
+    else:
+        pass
+
     logger.info(f"Samples used: {args.samples}")
     logger.info(f"Complements: {args.complement}")
     logger.info(f"Index: {args.index}")
