@@ -3,9 +3,9 @@ MinPipe is a minimal but fully logged pipeline or workflow to be used for a seri
 
 ### Installing
 - Install Conda or Miniconda by using the `conda.sh` inside `src` folder
-	- Run `chmod +x conda.sh` and then `bash conda.sh`, and follow the next steps
+	- Run `bash conda.sh`, and follow the next steps
 - Activate Bioconda channel by running `packages.sh` inside `src` folder
-	- Run `chmod +x packages.sh` and then `bash packages.sh`, and follow the next steps
+	- Run `bash packages.sh`, and follow the next steps
 - Install R in [Linux](https://cran.r-project.org/bin/linux/) selecting your distro and following the steps provided by R Project
 	- If you are using a Ubuntu based distribution follow the next steps:
 		- Run
@@ -59,6 +59,8 @@ MinPipe is a minimal but fully logged pipeline or workflow to be used for a seri
 - -b or --bootstrap is the number of bootstrap samples. Default: 100
 - --single is the flag to indicate single-ended quantification without complements. An optional argument.
 - --ext-qc is a flag to indicate that will have extensive QC. **MAY NEED MORE FILES**
+- --json pass the Json file name that has to be located inside the input folder. The user can create separated folders inside the input, e.g. input/params/parameters.json.
+- --yaml pass the YAML/YML file name that has to be located inside the input folder. The user can do the same as the Json file creating folders, e.g. input/params/parameters.yml.
 
 ### How to work with Kallisto results using Sleuth R package
 - Run `Rscript runSleuth.R [arguments]`
