@@ -3,6 +3,7 @@ from subprocess import run
 from pathlib import Path
 from datetime import datetime
 from src.json.support import json_parse
+from src.yaml.support import yaml_parse
 from src.utility import (
     working_directory as wd, 
     disk_usage as du, 
@@ -266,9 +267,17 @@ def arguments() -> argparse.Namespace:
     logger.addHandler(logging.FileHandler(CURR_TIME + ".log", "a"))
 
     args = parser.parse_args()
-    if Path(f"input/{args.json[0]}").is_file():
+    if Path(f"input/{args.json[0]}").is_file() and \
+        Path(f"input/{args.yaml[0]}").is_file():
+        logger.info("Both YAML and Json detected. Please pass only 1 file through argument handling.")
+        exit()
+    elif Path(f"input/{args.json[0]}").is_file():
         logger.info("Json file found. Proceeding with Json parser for arguments.")
         lst_args = json_parse(args.json[0])
+        args = parser.parse_args(lst_args)
+    elif Path(f"input/{args.yaml[0]}").is_file():
+        logger.info("YAML file found. Proceeding with YAML parser for arguments.")
+        lst_args = yaml_parse(args.yaml[0])
         args = parser.parse_args(lst_args)
     else:
         pass
