@@ -191,8 +191,6 @@ def read_samples(args: argparse.Namespace) -> argparse.Namespace:
 
 def check_idx_trans(args: argparse.Namespace) -> argparse.Namespace:
     logger = logging.getLogger("main.logger")
-    # Chekcing if the index folder has a .idx file to be used, if no file it exits, if > 1 it exits
-    # If only 1 file is found, it uses as default index.
     if args.index is None and args.transcript is None:
         logger.info("No index or transcript has been passed")
         exit()
@@ -238,6 +236,9 @@ def check_idx_trans(args: argparse.Namespace) -> argparse.Namespace:
     return args
 
 def arguments() -> argparse.Namespace:
+    # # # # # # # # # # # # # # # # # #
+    # Building argparse
+    # # # # # # # # # # # # # # # # # #
     parser = argparse.ArgumentParser(description="Run Kallisto for every samples given.")
     parser.add_argument("-s", "--samples", nargs="+", required=False, 
         help="<Optional> List of samples to iterate over. All arguments can be passed as Json.", type=str)
@@ -260,6 +261,9 @@ def arguments() -> argparse.Namespace:
     parser.add_argument("--json", nargs=1, required=False,
         help="<Optional> Use a Json file to pass all the arguments instead of command line interface. \
             See the parameters.json inside the examples folder to understand how to pass args.")
+    parser.add_argument("--yaml", nargs=1, required=False,
+        help="<Optional> Use a YAML/YML file to pass all the arguments instead of command line interface. \
+            See the parameters.yml inside the examples folder to understand how to pass args.")
 
     # Creating and logging info for the current run
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%d/%m/%Y %H:%M:%S")
@@ -267,15 +271,22 @@ def arguments() -> argparse.Namespace:
     logger.addHandler(logging.FileHandler(CURR_TIME + ".log", "a"))
 
     args = parser.parse_args()
-    if Path(f"input/{args.json[0]}").is_file() and \
-        Path(f"input/{args.yaml[0]}").is_file():
+
+    # # # # # # # # # # # # # # # # # #
+    # Handling YAML/JSON/CLI parsing
+    # # # # # # # # # # # # # # # # # #
+    if args.json is not None and args.yaml is not None:
         logger.info("Both YAML and Json detected. Please pass only 1 file through argument handling.")
         exit()
-    elif Path(f"input/{args.json[0]}").is_file():
+    elif args.json is not None:
+        try: Path(f"input/{args.json[0]}").is_file()
+        except: logger.info(Exception); quit()
         logger.info("Json file found. Proceeding with Json parser for arguments.")
         lst_args = json_parse(args.json[0])
         args = parser.parse_args(lst_args)
-    elif Path(f"input/{args.yaml[0]}").is_file():
+    elif args.yaml is not None:
+        try: Path(f"input/{args.yaml[0]}").is_file()
+        except: logger.info(Exception); quit()
         logger.info("YAML file found. Proceeding with YAML parser for arguments.")
         lst_args = yaml_parse(args.yaml[0])
         args = parser.parse_args(lst_args)
@@ -291,6 +302,9 @@ def arguments() -> argparse.Namespace:
     logger.info(f"Single ended: {args.single}")
     logger.info(f"Extensive Quality Control: {args.ext_qc}")
 
+    # # # # # # # # # # # # # # # # # #
+    # Argument checking
+    # # # # # # # # # # # # # # # # # #
     r = False
     while r not in ['y', 'n']:
         r = str(input("\nIs this correct? [y/n]\n")).lower()
