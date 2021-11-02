@@ -22,7 +22,7 @@ def download_hsa_trscript(args: argparse.Namespace) -> argparse.Namespace:
         run([
             "wget", "-P", "index/", "-c",
             "http://ftp.ensembl.org/pub/release-104/fasta/homo_sapiens/cdna/Homo_sapiens.GRCh38.cdna.all.fa.gz",
-            "-O", "homo_sapiens_GRCh38_cdna.fa.gz"
+            "-O", "index/homo_sapiens_GRCh38_cdna.fa.gz"
         ])
     except Exception as exc:
         logger.info(exc)
@@ -39,7 +39,7 @@ def download_mmu_trscript(args: argparse.Namespace) -> argparse.Namespace:
         run([
             "wget", "-P", "index/", "-c",
             "http://ftp.ensembl.org/pub/release-104/fasta/mus_musculus/cdna/Mus_musculus.GRCm39.cdna.all.fa.gz",
-            "-O", "mus_musculus_GRCm39_cdna.fa.gz"
+            "-O", "index/mus_musculus_GRCm39_cdna.fa.gz"
         ])
     except Exception as exc:
         logger.info(exc)
@@ -74,7 +74,7 @@ def create_index(args: argparse.Namespace) -> argparse.Namespace:
     else:
         idx_name = args.transcript[0].split(".")[0]
         
-    idx = run(["kallisto", "index", "index/" + idx_name + ".idx",
+    idx = run(["kallisto", "index", "-i", "index/" + idx_name + ".idx",
         "index/" + args.transcript[0]], capture_output=True, text=True)
 
     if idx.stdout:
@@ -82,7 +82,7 @@ def create_index(args: argparse.Namespace) -> argparse.Namespace:
     if idx.stderr:
         logger.info(idx.stderr)
     
-    args.index = "index/" + idx_name + ".idx"
+    args.index = ["index/" + idx_name + ".idx"]
 
     return args
 
@@ -265,12 +265,12 @@ def arguments() -> argparse.Namespace:
         help="<Optional> Use a YAML/YML file to pass all the arguments instead of command line interface. \
             See the parameters.yml inside the examples folder to understand how to pass args.")
 
+    args = parser.parse_args()
+
     # Creating and logging info for the current run
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%d/%m/%Y %H:%M:%S")
     logger = logging.getLogger("main.logger")
     logger.addHandler(logging.FileHandler(CURR_TIME + ".log", "a"))
-
-    args = parser.parse_args()
 
     # # # # # # # # # # # # # # # # # #
     # Handling YAML/JSON/CLI parsing
