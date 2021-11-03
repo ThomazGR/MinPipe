@@ -3,11 +3,13 @@ import argparse
 from subprocess import run
 from pathlib import Path
 
+
 def disk_usage(path: str = "/") -> dict:
     import shutil
-    total, used, free = [i/1073741824 for i in shutil.disk_usage(path)]
-    return {"total": total, "used":used, "free":free, 
-    "used_p":round((used / total) * 100, 2), "free_p":round((free / total) * 100, 2)}
+    total, used, free = [i / 1073741824 for i in shutil.disk_usage(path)]
+    return {"total": total, "used": used, "free": free,
+            "used_p": round((used / total) * 100, 2), "free_p": round((free / total) * 100, 2)}
+
 
 @contextmanager
 def working_directory(directory):
@@ -19,16 +21,18 @@ def working_directory(directory):
     finally:
         os.chdir(owd)
 
+
 def decide_format(args: argparse.Namespace) -> argparse.Namespace:
     from subprocess import run
     results = {}
     for format in ['.fq.gz', '.fastq.gz', '.fastq', '.fq']:
         value = sum(format in s for s in run(["ls", "input/"], capture_output=True, text=True).stdout.split("\n"))
-        results.update({format:value})
+        results.update({format: value})
 
     args.format = max(results, key=results.get)
 
     return args
+
 
 def check_index(path_index: str):
     if Path(path_index).is_file():
@@ -36,7 +40,8 @@ def check_index(path_index: str):
     else:
         exit(f"No index file found on {path_index}")
 
-    return 
+    return
+
 
 def build_directory(args: argparse.Namespace, curr_time: str) -> argparse.Namespace:
     run(["mkdir", "-p", "results_" + curr_time + "/1_quality_control"])
