@@ -1,5 +1,6 @@
 from itertools import chain
 
+
 def yaml_parse(yml_file: str = None):
     with open(f"input/{yml_file}") as yml:
         comp = list(chain.from_iterable([i.split("\n") for i in yml.readlines()]))
@@ -12,9 +13,9 @@ def yaml_parse(yml_file: str = None):
     tbp = []
     for index, value in enumerate(fnl):
         if value in ["samples", "complement", "index", "transcript", \
-            "threads", "bootstrap", "single", "ext-qc"]:
+                     "threads", "bootstrap", "single", "ext-qc"]:
             fnl[index] = f"--{value}"
-            
+
         if value == "true":
             tbp.append(index)
         elif value == "false":
@@ -22,5 +23,5 @@ def yaml_parse(yml_file: str = None):
             tbp.append(index)
 
     for i in sorted(tbp, reverse=True): fnl.pop(i)
-    
+
     return fnl
