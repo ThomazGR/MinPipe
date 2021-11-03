@@ -41,19 +41,35 @@ create.args <- function() {
 
 start.metadata <- function(args) {
     # Start metadata and build paths to abundance.h5 files
-    # build support for Google Sheets table (maybe it's useful?)
-    metadata <- read.table(args[["--file"]], sep = ";", header = T, stringsAsFactors = F)
+    if (grepl("https://docs.google.com/spreadsheets", args$file, fixed = T) &
+        grepl("output=csv", args$file, fixed = T)) {
+       tryCatch(
+           expr = {
+               metadata <- read.table(args$file, sep = ",", header = T, stringsAsFactors = F)
+           },
+           error = function(e) {
+               print(paste("ERROR: \n", e))
+               quit()
+           },
+           warning = function(w) {
+               print(paste("WARNING: \n", w))
+               quit()
+           }
+       )
+    } else {
+       metadata <- read.table(args$file, sep = ";", header = T, stringsAsFactors = F)
+    }
     #setwd(path.expand("~/"))
 
     metadata <- dplyr::mutate(metadata,
-                              path = file.path(args[["--results"]], "3_kallisto_results",
+                              path = file.path(args$results, "3_kallisto_results",
                                                Run_s, "abundance.h5"))
     metadata <- dplyr::rename(metadata, sample = Run_s)
 
-    if (is.null(args[["--groups"]][[1]])) {
+    if (is.null(args$groups[[1]])) {
         groups <- unique(metadata$treatment)
     } else {
-        groups <- strsplit(args[["--groups"]], ",")[[1]]
+        groups <- strsplit(args$groups, ",")[[1]]
     }
     volcano <- !args[["--no-volcano"]]
 
@@ -270,10 +286,17 @@ arg <- create.args()
 
 `%notin%` <- Negate(`%in%`)
 
-if (!file.exists(paste0("input/", arg$file))) {
-    print(paste(arg$file, "file for metadata does not exists in the input folder."))
-    quit()
-}
+if (grepl("https://docs.google.com/spreadsheets", args$file, fixed = T) &
+    grepl("output=csv", args$file, fixed = T)) {
+        print("Docs file to be checked further.")
+    } else {
+       if (!file.exists(paste0("input/", arg$file))) {
+            print(paste(arg$file, "file for metadata does not exists in the input folder."))
+            quit()
+        }
+    }
+
+
 
 if (!dir.exists(arg$results)) {
     print(paste(arg$results, "folder for results does not exists in the MinPipe directory."))
@@ -288,7 +311,9 @@ if (!dir.exists(arg$path) & !arg$no_volcano) {
     print(paste(arg$path, "does not exists to save the volcano images."))
 }
 
-if (substr(arg[["--file"]], nchar(arg[["--file"]]) - 4 + 1, nchar(arg[["--file"]])) != ".txt") {
+if (!grepl("https://docs.google.com/spreadsheets", args$file, fixed = T) &
+    !grepl("output=csv", args$file, fixed = T) &
+    substr(arg[["--file"]], nchar(arg[["--file"]]) - 4 + 1, nchar(arg[["--file"]])) != ".txt") {
     stop("Metadata has to be a metadata.txt file. Take a look at the example in the Github repo.")
 }
 if (arg$organism %notin% c("mmu", "hsa")) { stop("-o/--organism not supported, please use only for hsa or mmu.") }
