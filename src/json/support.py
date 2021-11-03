@@ -1,5 +1,6 @@
 import json
 
+
 def json_parse(file: str = None) -> list:
     try:
         with open(f"input/{file}") as fd:
