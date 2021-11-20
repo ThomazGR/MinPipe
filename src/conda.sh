@@ -1,12 +1,13 @@
 #!/usr/bin/bash
 
-# Download Miniconda from Anaconda repo
-wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh
+bash ~/miniconda.sh -b -p $HOME/miniconda
+export PATH="$HOME/miniconda/bin:$PATH"
+conda init
+source $HOME/.bashrc
 
-# chmod the .sh file to make it executable
-chmod +x Miniconda3-latest-Linux-x86_64.sh
-
-# Install Miniconda downloaded
-./Miniconda3-latest-Linux-x86_64.sh
-
-echo "Latest version of Miniconda has been installed, restart your terminal to install the packages!"
+if [ "$CONDA_DEFAULT_ENV" == "" ]; then
+    echo "Miniconda has not been installed. Check if there's any errors."
+else
+    echo "Latest version of Miniconda has been installed, now install the packages!"
+fi
