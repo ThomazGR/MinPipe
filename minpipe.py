@@ -13,7 +13,6 @@ from src.utility import (
 
 CURR_TIME = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
 
-
 def download_hsa_transcript(args: argparse.Namespace) -> argparse.Namespace:
     logger = logging.getLogger("main.logger")
 
