@@ -2,20 +2,58 @@ from subprocess import run
 from pathlib import Path
 import logging
 from utility import decide_format as decide, check_index, build_directory
+from datetime import datetime
 
-class pipeline():
-    def __init__(self, logger, args) -> None:
-        self.samples = args.samples
-        self.complement = args.complement
-        self.index = args.index
-        self.transcript = args.transcript
-        self.threads = args.threads
-        self.bootstrap = args.bootstrap
-        self.single = args.single
-        self.json = args.json
-        self.yaml = args.yaml
-        self.ext_qc = args.ext_qc
+class TestSamples():
+    def __init__(self, logger, single, complement, samples, format) -> None:
+        self.samples = samples
+        self.complement = complement
+        self.single = single
         self.logger = logger
+        pass
+
+    def read_samples(self) -> None:
+        if self.single and self.complement is not None:
+            self.logger.info("Single-ended analysis does not contain complements. \
+                Complements are for paired-ended (e.g. sample1_R1.fastq.gz and sample1_R2.fastq.gz)")
+            exit()
+        elif not self.single and self.complement is not None:
+            if len(self.complement) > 2:
+                self.logger.info("Complement (-c or --complement) argument has to be maximum \
+                    of 2 for paired-ended reads.")
+                exit()
+
+        if not self.single:
+            for file in self.samples:
+                if Path("input/" + file + self.complement[0] + self.format).is_file() \
+                        and Path("input/" + file + self.complement[1] + self.format).is_file():
+                    pass
+                else:
+                    self.logger.info(f"File {file} does not exist in input/ folder.")
+                    exit()
+        elif self.single:
+            for file in self.samples:
+                if Path("input/" + file + self.format).is_file():
+                    pass
+                else:
+                    self.logger.info(f"File {file} does not exist in input/ folder.")
+                    exit()
+
+        self.logger.info("All files exists. Continuing the analysis.")
+
+        pass
+
+    def __exit__(self, type, value, traceback):
+        try:
+            run(args=[], text=True, capture_output=True)
+        except Exception as exc:
+            print(exc)
+
+class TestIndexTranscript():
+    def __init__(self, logger, transcript, index) -> None:
+        self.logger = logger
+        self.transcript = transcript
+        self.index = index
         pass
 
     def __download_hsa_transcript(self) -> None:
@@ -66,37 +104,6 @@ class pipeline():
 
         pass
 
-    def read_samples(self) -> None:
-        if self.single and self.complement is not None:
-            self.logger.info("Single-ended analysis does not contain complements. \
-                Complements are for paired-ended (e.g. sample1_R1.fastq.gz and sample1_R2.fastq.gz)")
-            exit()
-        elif not self.single and self.complement is not None:
-            if len(self.complement) > 2:
-                self.logger.info("Complement (-c or --complement) argument has to be maximum \
-                    of 2 for paired-ended reads.")
-                exit()
-
-        if not self.single:
-            for file in self.samples:
-                if Path("input/" + file + self.complement[0] + self.format).is_file() \
-                        and Path("input/" + file + self.complement[1] + self.format).is_file():
-                    pass
-                else:
-                    self.logger.info(f"File {file} does not exist in input/ folder.")
-                    exit()
-        elif self.single:
-            for file in self.samples:
-                if Path("input/" + file + self.format).is_file():
-                    pass
-                else:
-                    self.logger.info(f"File {file} does not exist in input/ folder.")
-                    exit()
-
-        self.logger.info("All files exists. Continuing the analysis.")
-
-        pass
-
     def check_idx_trans(self) -> None:
         if self.index is None and self.transcript is None:
             self.logger.info("No index or transcript has been passed")
@@ -141,8 +148,84 @@ class pipeline():
 
         pass
 
-    def __exit__(self, type, value, traceback):
-        try:
-            run(args=[], text=True, capture_output=True)
-        except Exception as exc:
-            print(exc)
+class PipelineCreator():
+    def __init__(self, single: bool, complement: list, samples: list, format: str, 
+                output: str, index: str, threads: str, bootstrap: str) -> None:
+        self.single = single
+        self.complement = complement
+        self.samples = samples
+        self.format = format
+        self.output = output
+        self.index = index
+        self.threads = threads
+        self.bootstrap = bootstrap
+        self.curr_time = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
+
+        pass
+
+    def __run_paired(self) -> None:
+        for sample in self.samples:
+            qc = run(["fastqc", "-o", self.output + "1_quality_control", "--no-extract",
+                    "input/" + sample + self.complement[1] + self.format],
+                    "input/" + sample + self.complement[0] + self.format,
+                    capture_output=True, text=True)
+            self.logger.info(qc.stdout)
+            self.logger.info(qc.stderr)
+
+            trim = run(["trim_galore", "--quality", "20", "--fastqc", "--length", "25", "--paired",
+                        "-o", self.output + "2_trimmed_output",
+                        "input/" + sample + self.complement[0] + self.format,
+                        "input/" + sample + self.complement[1] + self.format],
+                    capture_output=True, text=True)
+            self.logger.info(trim.stdout)
+            self.logger.info(trim.stderr)
+
+            run(["mkdir", "-p", f"results_{self.curr_time}/3_kallisto_results/{sample}"])
+
+            kall = run(["kallisto", "quant", "-t", self.threads[0], "-b", self.bootstrap[0],
+                        "-i", "index/" + self.index[0], "-o", self.output + "3_kallisto_results/" + sample,
+                        "--pseudobam",
+                        self.output + "2_trimmed_output/" + sample + self.complement[0] + "_val_1.fq.gz",
+                        self.output + "2_trimmed_output/" + sample + self.complement[1] + "_val_2.fq.gz"],
+                    capture_output=True, text=True)
+            self.logger.info(kall.stdout)
+            self.logger.info(kall.stderr)
+        
+        pass
+
+    def __run_single(self) -> None:
+        for sample in self.samples:
+            qc = run(["fastqc", "-o", self.output + "1_quality_control", "--no-extract",
+                    "input/" + sample + self.format],
+                    capture_output=True, text=True)
+            self.logger.info(qc.stdout)
+            self.logger.info(qc.stderr)
+
+            trim = run(["trim_galore", "--quality", "20", "--fastqc", "--length", "25",
+                        "-o", self.output + "2_trimmed_output",
+                        "input/" + sample + self.format],
+                    capture_output=True, text=True)
+            self.logger.info(trim.stdout)
+            self.logger.info(trim.stderr)
+
+            run(["mkdir", "-p", f"results_{self.curr_time}/3_kallisto_results/{sample}"])
+
+            kall = run(["kallisto", "quant", "-t", self.threads[0], "-b", self.bootstrap[0],
+                        "--pseudobam",
+                        "--single", "-i", "index/" + self.index[0], "-o", self.output + "3_kallisto_results/" + sample,
+                        self.output + "2_trimmed_output/" + sample + "_trimmed.fq.gz"],
+                    capture_output=True, text=True)
+            self.logger.info(kall.stdout)
+            self.logger.info(kall.stderr)
+        
+        pass
+
+    def run_full(self) -> None:
+        if not self.single:
+            self.__run_paired(self)
+        elif self.single:
+            self.__run_single(self)
+            
+        self.logger.info("Finished pseudoalignment!")
+
+        pass
