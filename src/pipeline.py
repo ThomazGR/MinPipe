@@ -4,7 +4,7 @@ from datetime import datetime
 
 class PipelineCreator():
     def __init__(self, single: bool, complement: list, samples: list, format: str, output: str, index: str, 
-                logger, threads: str = "4", bootstrap: str = "100", min_len = "25", quality = "20") -> None:
+                logger, threads: str = "4", bootstrap: str = "100", min_len: str = "25", quality: str = "20") -> None:
         self.single = single
         self.complement = complement
         self.samples = samples
@@ -79,9 +79,9 @@ class PipelineCreator():
 
     def run_full(self) -> None:
         if not self.single:
-            self.__run_paired(self)
+            self.__run_paired()
         elif self.single:
-            self.__run_single(self)
+            self.__run_single()
             
         self.logger.info("Finished pseudoalignment!")
 
