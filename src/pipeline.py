@@ -3,8 +3,8 @@ import logging
 from datetime import datetime
 
 class PipelineCreator():
-    def __init__(self, single: bool, complement: list, samples: list, format: str, 
-                output: str, index: str, threads: str, bootstrap: str, logger) -> None:
+    def __init__(self, single: bool, complement: list, samples: list, format: str, output: str, index: str, 
+                logger, threads: str = "4", bootstrap: str = "100", min_len = "25", quality = "20") -> None:
         self.single = single
         self.complement = complement
         self.samples = samples
@@ -14,6 +14,9 @@ class PipelineCreator():
         self.threads = threads
         self.bootstrap = bootstrap
         self.curr_time = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
+        self.logger = logger
+        self.min_len = min_len
+        self.quality = quality
 
         pass
 
@@ -26,7 +29,7 @@ class PipelineCreator():
             self.logger.info(qc.stdout)
             self.logger.info(qc.stderr)
 
-            trim = run(["trim_galore", "--quality", "20", "--fastqc", "--length", "25", "--paired",
+            trim = run(["trim_galore", "--quality", self.quality, "--fastqc", "--length", self.min_len, "--paired",
                         "-o", f"{self.output}2_trimmed_output",
                         f"input/{sample}{self.complement[0]}{self.format}",
                         f"input/{sample}{self.complement[1]}{self.format}"],
@@ -55,7 +58,7 @@ class PipelineCreator():
             self.logger.info(qc.stdout)
             self.logger.info(qc.stderr)
 
-            trim = run(["trim_galore", "--quality", "20", "--fastqc", "--length", "25",
+            trim = run(["trim_galore", "--quality", self.quality, "--fastqc", "--length", self.min_len,
                         "-o", f"{self.output}2_trimmed_output",
                         f"input/{sample}{self.format}"],
                     capture_output=True, text=True)
