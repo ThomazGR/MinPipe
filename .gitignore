@@ -141,7 +141,7 @@ dmypy.json
 .vscode
 
 # samples
-/amostras
+input/*.json
 
 *.fq.gz
 *.fastq.gz
