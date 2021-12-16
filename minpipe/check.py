@@ -1,13 +1,14 @@
 from subprocess import run
 from pathlib import Path
-import logging
 
-class TestSamples():
-    def __init__(self, logger, single, complement, samples, format) -> None:
+
+class TestSamples:
+    def __init__(self, logger, single, complement, samples, file_format) -> None:
         self.samples = samples
         self.complement = complement
         self.single = single
         self.logger = logger
+        self.format = file_format
         pass
 
     def read_samples(self) -> None:
@@ -41,13 +42,14 @@ class TestSamples():
 
         pass
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, type_back, value, traceback):
         try:
             run(args=[], text=True, capture_output=True)
         except Exception as exc:
             print(exc)
 
-class TestIndexTranscript():
+
+class TestIndexTranscript:
     def __init__(self, logger, transcript, index) -> None:
         self.logger = logger
         self.transcript = transcript
@@ -67,9 +69,8 @@ class TestIndexTranscript():
 
         self.logger.info("Homo sapiens transcript has been downloaded!")
         self.transcript = ["homo_sapiens_GRCh38_cdna.fa.gz"]
-        
-        pass
 
+        pass
 
     def __download_mmu_trscript(self) -> None:
         try:
@@ -84,14 +85,14 @@ class TestIndexTranscript():
 
         self.logger.info("Mus musculus transcript has been downloaded!")
         self.transcript = ["mus_musculus_GRCm39_cdna.fa.gz"]
-        
+
         pass
 
-    def __check_index(path_index: str):
-        if Path(path_index).is_file():
+    def __check_index(self):
+        if Path(self.index).is_file():
             pass
         else:
-            exit(f"No index file found on {path_index}")
+            exit(f"No index file found on {self.index}")
 
         pass
 
@@ -102,7 +103,7 @@ class TestIndexTranscript():
             idx_name = self.transcript[0].split(".")[0]
 
         idx = run(["kallisto", "index", "-i", f"index/{idx_name}.idx",
-                f"index/{self.transcript[0]}"], capture_output=True, text=True)
+                   f"index/{self.transcript[0]}"], capture_output=True, text=True)
         self.logger.info(idx.stdout)
         self.logger.info(idx.stderr)
 
@@ -116,33 +117,33 @@ class TestIndexTranscript():
             exit()
         elif self.index is None and self.transcript:
             if any(fmt in self.transcript[0] for fmt in ['.fa', '.fa.gz',
-                                                        '.fastq', '.fastq.gz',
-                                                        '.fq', '.fq.gz']):
+                                                         '.fastq', '.fastq.gz',
+                                                         '.fq', '.fq.gz']):
                 try:
-                    self.create_index(self)
+                    self.create_index()
                     self.logger.info("Index created")
-                    self.__check_index(self.index)
+                    self.__check_index()
                 except Exception as ex:
                     self.logger.info(ex)
                     exit()
             else:
                 if self.transcript[0].lower() == "mmu":
-                    self.__download_mmu_trscript(self)
-                    self.create_index(self)
+                    self.__download_mmu_trscript()
+                    self.create_index()
                     self.logger.info("Mmu transcript downloaded and index created.")
-                    self.__check_index(self.index)
+                    self.__check_index()
                 elif self.transcript[0].lower() == "hsa":
-                    self.__download_hsa_transcript(self)
-                    self.create_index(self)
+                    self.__download_hsa_transcript()
+                    self.create_index()
                     self.logger.info("Hsa transcript downloaded and index created.")
-                    self.__check_index(self.index)
+                    self.__check_index()
                 else:
                     self.logger.info("Species or format not supported. \
                         Select hsa or mmu, or download your own transcript.")
                     exit()
         elif self.index and self.transcript is None:
             try:
-                self.__check_index("index/" + self.index[0])
+                self.__check_index()
             except Exception as ex:
                 self.logger.info(ex)
                 exit()
