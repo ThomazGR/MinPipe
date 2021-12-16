@@ -1,15 +1,17 @@
 from subprocess import run
 from datetime import datetime
 import logging
+import re
 
 class PipelineCreator():
-    def __init__(self, single: bool, complement: list, samples: list, format: str, output: str, index: str, 
-                threads: str = "4", bootstrap: str = "100", min_len: str = "25", quality: str = "20") -> None:
+    def __init__(self, single: bool, complement: list, samples: list, format: str, output: str, index: str, input: str,
+                logger = None, threads: str = "4", bootstrap: str = "100", min_len: str = "25", quality: str = "20") -> None:
         self.single = single
         self.complement = complement
         self.samples = samples
         self.format = format
         self.output = output
+        self.input = input
         self.index = index
         self.threads = threads
         self.bootstrap = bootstrap
@@ -22,7 +24,22 @@ class PipelineCreator():
         #if path/in/sample/names no need to get input path
         #if both format and path in sample names then get both from samples and insert to self.input and self.format
         
-        #self.logger = logger
+        find_format_path = re.compile("[a-zA-Z0-9-_]*/[a-zA-Z0-9-]*(\.fa\.gz|\.fq\.gz|\.fastq\.gz|\.fasta\.gz)")
+
+        if all(
+            bool(re.search(find_format_path, sample))
+            for sample in self.samples
+            ):
+            self.format = format
+            self.input = input
+
+
+
+        self.logger = logger
+        if logger is None:
+            logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%d/%m/%Y %H:%M:%S")
+            self.logger = logging.getLogger("main.logger")
+            self.logger.addHandler(logging.FileHandler(f"{self.curr_time}.log", "a"))
 
         pass
 
