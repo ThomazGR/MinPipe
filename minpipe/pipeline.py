@@ -6,7 +6,7 @@ import re
 
 class PipelineCreator:
     def __init__(self, single: bool, complement: list, samples: list, file_format: str, output_path: str, index: str,
-                 input_path: str, logger: logging.Logger = None, threads: int = 4, bootstrap: int = 100,
+                 input_path: str = "input/", logger: logging.Logger = None, threads: int = 4, bootstrap: int = 100,
                  min_len: int = 25, quality: int = 20) -> None:
         """
         Construct the PipelineCreator object to run full pipeline writing results to parameter/default folder.
@@ -35,6 +35,7 @@ class PipelineCreator:
         self.bootstrap = str(bootstrap)
         self.min_len = str(min_len)
         self.quality = str(quality)
+        self.logger = logger
         self.curr_time = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
         # self.format, if format is passed then no decide_format needed
         # self.input where is passed input path to sample files
@@ -42,6 +43,9 @@ class PipelineCreator:
         # if path/in/sample/names no need to get input path
         # if both format and path in sample names then get both from samples and insert to self.input and self.format
 
+        pass
+
+    def __enter__(self):
         find_format_path = re.compile(r"[a-zA-Z0-9-_]*/[a-zA-Z0-9-]*(\.fa\.gz|\.fq\.gz|\.fastq\.gz|\.fasta\.gz)")
 
         if all(
@@ -51,13 +55,11 @@ class PipelineCreator:
             self.format = format
             self.input = input
 
-        self.logger = logger
-        if logger is None:
+        if self.logger is None:
             logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%d/%m/%Y %H:%M:%S")
             self.logger = logging.getLogger("main.logger")
             self.logger.addHandler(logging.FileHandler(f"{self.curr_time}.log", "a"))
-
-        pass
+        return self
 
     def __run_paired(self) -> None:
         """
@@ -66,16 +68,16 @@ class PipelineCreator:
         """
         for sample in self.samples:
             qc = run(["fastqc", "-o", f"{self.output}1_quality_control", "--no-extract",
-                      f"input/{sample}{self.complement[0]}{self.format}",
-                      f"input/{sample}{self.complement[1]}{self.format}"],
+                      f"{self.input}{sample}{self.complement[0]}{self.format}",
+                      f"{self.input}{sample}{self.complement[1]}{self.format}"],
                      capture_output=True, text=True)
             self.logger.info(qc.stdout)
             self.logger.info(qc.stderr)
 
             trim = run(["trim_galore", "--quality", self.quality, "--fastqc", "--length", self.min_len, "--paired",
                         "-o", f"{self.output}2_trimmed_output",
-                        f"input/{sample}{self.complement[0]}{self.format}",
-                        f"input/{sample}{self.complement[1]}{self.format}"],
+                        f"{self.input}{sample}{self.complement[0]}{self.format}",
+                        f"{self.input}{sample}{self.complement[1]}{self.format}"],
                        capture_output=True, text=True)
             self.logger.info(trim.stdout)
             self.logger.info(trim.stderr)
@@ -100,14 +102,14 @@ class PipelineCreator:
         """
         for sample in self.samples:
             qc = run(["fastqc", "-o", f"{self.output}1_quality_control", "--no-extract",
-                      f"input/{sample}{self.format}"],
+                      f"{self.input}{sample}{self.format}"],
                      capture_output=True, text=True)
             self.logger.info(qc.stdout)
             self.logger.info(qc.stderr)
 
             trim = run(["trim_galore", "--quality", self.quality, "--fastqc", "--length", self.min_len,
                         "-o", f"{self.output}2_trimmed_output",
-                        f"input/{sample}{self.format}"],
+                        f"{self.input}{sample}{self.format}"],
                        capture_output=True, text=True)
             self.logger.info(trim.stdout)
             self.logger.info(trim.stderr)
