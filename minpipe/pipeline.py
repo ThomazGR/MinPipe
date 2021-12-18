@@ -1,7 +1,10 @@
 from subprocess import run
 from datetime import datetime
+from pathlib import Path
+from os import makedirs
 import logging
-import re
+import warnings
+# import re
 
 
 class PipelineCreator:
@@ -46,20 +49,46 @@ class PipelineCreator:
         pass
 
     def __enter__(self):
-        find_format_path = re.compile(r"[a-zA-Z0-9-_]*/[a-zA-Z0-9-]*(\.fa\.gz|\.fq\.gz|\.fastq\.gz|\.fasta\.gz)")
+        # find_format_path = re.compile(r"[a-zA-Z0-9-_]*/[a-zA-Z0-9-]*(\.fa\.gz|\.fq\.gz|\.fastq\.gz|\.fasta\.gz)")
+        # if all(
+        #        bool(re.search(find_format_path, sample))
+        #        for sample in self.samples
+        # ):
+        #    self.format = format
+        #    self.input = input
+        return self
 
-        if all(
-                bool(re.search(find_format_path, sample))
-                for sample in self.samples
-        ):
-            self.format = format
-            self.input = input
+    def __start(self) -> None:
+        """
+        Start every parameter that has not been passed, e.g. file_format, output path, build directories and logger
+        handler. Also checking input directory to be right.
+        :return:
+        """
+        if self.format is None:
+            self.__decide_format()
+
+        if self.input[-1] != "/":
+            self.input += "/"
+            assert Path(self.input).is_dir() is True, f"Input path should be a valid path. Passed `{self.input}`"
+        else:
+            assert Path(self.input).is_dir() is True, f"Input path should be a valid path. Passed `{self.input}`"
+
+        if self.output is None:
+            self.output = f"results_{self.curr_time}/"
+        else:
+            if self.output[-1] == "/":
+                assert Path(self.output).is_dir() is True, f"Output path should be a valid path. Passed `{self.output}`"
+            else:
+                self.output += "/"
+                assert Path(self.output).is_dir() is True, f"Output path should be a valid path. Passed `{self.output}`"
+
+        self.__build_directory()
 
         if self.logger is None:
             logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%d/%m/%Y %H:%M:%S")
             self.logger = logging.getLogger("main.logger")
             self.logger.addHandler(logging.FileHandler(f"{self.curr_time}.log", "a"))
-        return self
+        pass
 
     def __run_paired(self) -> None:
         """
@@ -126,11 +155,36 @@ class PipelineCreator:
 
         pass
 
+    def __decide_format(self) -> None:
+        results = {}
+        for file_format in ['.fq.gz', '.fastq.gz', '.fastq', '.fq']:
+            value = sum(file_format in file for file in run(["ls", f"{self.input}/"],
+                                                            capture_output=True, text=True).stdout.split("\n"))
+            results.update({format: value})
+
+        self.format = str(max(results, key=results.get))
+
+        if max(results.values()) <= len(self.samples):
+            warnings.warn("Samples may not have the same file extension or it has not been detected.",
+                          category=UserWarning)
+
+        pass
+
+    def __build_directory(self) -> None:
+        makedirs(f"{self.output}1_quality_control")
+        makedirs(f"{self.output}2_trimmed_output")
+        makedirs(f"{self.output}3_kallisto_results")
+        makedirs(f"{self.output}4_picard_qc")
+
+        pass
+
     def run_full(self) -> None:
         """
         Run full pipeline choosing between single or paired-ended type
         :return: None
         """
+        self.__start()
+
         if not self.single:
             self.__run_paired()
         elif self.single:
