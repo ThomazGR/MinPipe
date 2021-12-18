@@ -39,7 +39,7 @@ class PipelineCreator:
         self.min_len = str(min_len)
         self.quality = str(quality)
         self.logger = logger
-        self.curr_time = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
+        self.curr_time = str(datetime.now().strftime("%d-%m-%Y_%H-%M-%S"))
         # self.format, if format is passed then no decide_format needed
         # self.input where is passed input path to sample files
         # if format in sample names no need to decide_format and get format from sample name
@@ -62,7 +62,7 @@ class PipelineCreator:
         """
         Start every parameter that has not been passed, e.g. file_format, output path, build directories and logger
         handler. Also checking input directory to be right.
-        :return:
+        :return: None
         """
         if self.format is None:
             self.__decide_format()
@@ -81,6 +81,38 @@ class PipelineCreator:
             else:
                 self.output += "/"
                 assert Path(self.output).is_dir() is True, f"Output path should be a valid path. Passed `{self.output}`"
+
+        # # # # # # # # # # # # # # # # # #
+        # Argument checking
+        # # # # # # # # # # # # # # # # # #
+        print("# # # # # # # # # # # # # # #")
+        print("# Current parameters")
+        print("# # # # # # # # # # # # # # #")
+        print(f"Single-ended analysis? {self.single}")
+        print(f"Complements: {self.complement}")
+        print(f"Samples: {self.samples}")
+        print(f"File format: {self.format}")
+        print(f"Output path: {self.output}")
+        print(f"Input path: {self.input}")
+        print(f"Index used: {self.index}")
+        print(f"Threads used: {self.threads}")
+        print(f"Quantification bootstrap: {self.bootstrap}")
+        print(f"Minimum length of trimmage: {self.min_len}")
+        print(f"Minimum quality of trimmage: {self.quality}")
+        print(f"Logging object: {bool(self.logger)}")
+        print(f"Time of start: {self.curr_time}")
+
+        r = False
+        while r not in ['y', 'n']:
+            r = str(input("\nIs this correct? [y/n]\n")).lower()
+            if r not in ['y', 'n']:
+                print("\nType `y` for Yes or `n` for No")
+            else:
+                if r == 'y':
+                    pass
+                elif r == 'n':
+                    print("Arguments not right. Exiting.")
+                    exit()
 
         self.__build_directory()
 
