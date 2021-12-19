@@ -120,6 +120,20 @@ class PipelineCreator:
             logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%d/%m/%Y %H:%M:%S")
             self.logger = logging.getLogger("main.logger")
             self.logger.addHandler(logging.FileHandler(f"{self.curr_time}.log", "a"))
+
+        self.logger.info(f"Samples used: {self.samples}")
+        self.logger.info(f"Complements: {self.complement}")
+        self.logger.info(f"Index: {self.index}")
+        # self.logger.info(f"Transcript: {self.transcript}")
+        self.logger.info(f"Threads number: {self.threads}")
+        self.logger.info(f"Bootstrap number: {self.bootstrap}")
+        self.logger.info(f"Single ended: {self.single}")
+        # self.logger.info(f"Extensive Quality Control: {self.ext_qc}")
+        self.logger.info(f"Minimum quality for trimmage: {self.quality}")
+        self.logger.info(f"Minimum length for trimmage: {self.min_len}")
+        self.logger.info(f"Input path: {self.input}")
+        self.logger.info(f"Output path: {self.output}")
+
         pass
 
     def __run_paired(self) -> None:
