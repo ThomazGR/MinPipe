@@ -42,12 +42,6 @@ class TestSamples:
 
         pass
 
-    def __exit__(self, type_back, value, traceback):
-        try:
-            run(args=[], text=True, capture_output=True)
-        except Exception as exc:
-            print(exc)
-
 
 class TestIndexTranscript:
     def __init__(self, logger, transcript, index) -> None:

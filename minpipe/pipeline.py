@@ -8,9 +8,10 @@ import warnings
 
 
 class PipelineCreator:
-    def __init__(self, single: bool, complement: list, samples: list, file_format: str, output_path: str, index: str,
-                 input_path: str = "input/", logger: logging.Logger = None, threads: int = 4, bootstrap: int = 100,
-                 min_len: int = 25, quality: int = 20) -> None:
+    def __init__(self, samples: list, single: bool = False, complement: list = None, file_format: str = None,
+                 output_path: str = None, index: str = None, input_path: str = "input/", logger: logging.Logger = None,
+                 transcript: str = None, threads: int = 4, bootstrap: int = 100, min_len: int = 25, quality: int = 20) \
+            -> None:
         """
         Construct the PipelineCreator object to run full pipeline writing results to parameter/default folder.
 
@@ -19,6 +20,7 @@ class PipelineCreator:
         :type samples: list
         :type file_format: str
         :type index: str
+        :type transcript: str
         :type logger: logging.Logger
         :type threads: int
         :type bootstrap: int
@@ -34,6 +36,7 @@ class PipelineCreator:
         self.output = output_path
         self.input = input_path
         self.index = index
+        self.transcript = transcript
         self.threads = str(threads)
         self.bootstrap = str(bootstrap)
         self.min_len = str(min_len)
@@ -102,15 +105,15 @@ class PipelineCreator:
         print(f"Logging object: {bool(self.logger)}")
         print(f"Time of start: {self.curr_time}")
 
-        r = False
-        while r not in ['y', 'n']:
-            r = str(input("\nIs this correct? [y/n]\n")).lower()
-            if r not in ['y', 'n']:
+        response = False
+        while response not in ['y', 'n']:
+            response = str(input("\nIs this correct? [y/n]\n")).lower()
+            if response not in ['y', 'n']:
                 print("\nType `y` for Yes or `n` for No")
             else:
-                if r == 'y':
+                if response == 'y':
                     pass
-                elif r == 'n':
+                elif response == 'n':
                     print("Arguments not right. Exiting.")
                     exit()
 
