@@ -7,14 +7,15 @@ import warnings
 
 from check import TestIndexTranscript, TestSamples
 from libinst import CheckLibs
+from quality import ExtensiveQC
 # import re
 
 
 class PipelineCreator:
     def __init__(self, samples: list, single: bool = False, complement: list = None, file_format: str = None,
                  output_path: str = None, index: str = None, input_path: str = "input/", logger: logging.Logger = None,
-                 transcript: str = None, threads: int = 4, bootstrap: int = 100, min_len: int = 25, quality: int = 20) \
-            -> None:
+                 transcript: str = None, threads: int = 4, bootstrap: int = 100, min_len: int = 25, quality: int = 20,
+                 ext_qc: bool = False) -> None:
         """
         Construct the PipelineCreator object to run full pipeline writing results to parameter/default folder.
 
@@ -29,6 +30,7 @@ class PipelineCreator:
         :type bootstrap: int
         :type min_len: int
         :type quality: int
+        :type ext_qc: bool
         :type output_path: str
         :type input_path: str
         """
@@ -44,6 +46,7 @@ class PipelineCreator:
         self.bootstrap = str(bootstrap)
         self.min_len = str(min_len)
         self.quality = str(quality)
+        self.ext_qc = ext_qc
         self.logger = logger
         self.curr_time = str(datetime.now().strftime("%d-%m-%Y_%H-%M-%S"))
         # self.format, if format is passed then no decide_format needed
@@ -116,11 +119,11 @@ class PipelineCreator:
         self.logger.info(f"Samples used: {self.samples}")
         self.logger.info(f"Complements: {self.complement}")
         self.logger.info(f"Index: {self.index}")
-        # self.logger.info(f"Transcript: {self.transcript}")
+        self.logger.info(f"Transcript: {self.transcript}")
         self.logger.info(f"Threads number: {self.threads}")
         self.logger.info(f"Bootstrap number: {self.bootstrap}")
         self.logger.info(f"Single ended: {self.single}")
-        # self.logger.info(f"Extensive Quality Control: {self.ext_qc}")
+        self.logger.info(f"Extensive Quality Control: {self.ext_qc}")
         self.logger.info(f"Minimum quality for trimmage: {self.quality}")
         self.logger.info(f"Minimum length for trimmage: {self.min_len}")
         self.logger.info(f"Input path: {self.input}")
@@ -138,6 +141,27 @@ class PipelineCreator:
         test_samples.read_samples()
 
         return self
+
+    def __start_log(self) -> None:
+        if self.logger is None:
+            logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%d/%m/%Y %H:%M:%S")
+            self.logger = logging.getLogger("main.logger")
+            self.logger.addHandler(logging.FileHandler(f"{self.curr_time}.log", "a"))
+            
+            self.logger.info(f"Samples used: {self.samples}")
+            self.logger.info(f"Complements: {self.complement}")
+            self.logger.info(f"Index: {self.index}")
+            self.logger.info(f"Transcript: {self.transcript}")
+            self.logger.info(f"Threads number: {self.threads}")
+            self.logger.info(f"Bootstrap number: {self.bootstrap}")
+            self.logger.info(f"Single ended: {self.single}")
+            self.logger.info(f"Extensive Quality Control: {self.ext_qc}")
+            self.logger.info(f"Minimum quality for trimmage: {self.quality}")
+            self.logger.info(f"Minimum length for trimmage: {self.min_len}")
+            self.logger.info(f"Input path: {self.input}")
+            self.logger.info(f"Output path: {self.output}")
+        
+        pass
 
     def __run_paired(self) -> None:
         """
@@ -232,12 +256,16 @@ class PipelineCreator:
         Run full pipeline choosing between single or paired-ended type
         :return: None
         """
-        self.__start()
+        self.__start_log()
 
         if not self.single:
             self.__run_paired()
         elif self.single:
             self.__run_single()
+
+        if self.ext_qc:
+            qc = ExtensiveQC(samples=self.samples, output=self.output, logger=self.logger)
+            qc.run_all()
 
         self.logger.info("Finished pseudoalignment!")
 
