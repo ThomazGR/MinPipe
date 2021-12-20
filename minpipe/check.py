@@ -92,9 +92,9 @@ class TestIndexTranscript:
 
     def create_index(self) -> None:
         if "/" in self.transcript[0]:
-            idx_name = self.transcript[0].split("/")[-1].split(".")[0]
+            idx_name = self.transcript.split("/")[-1].split(".")[0]
         else:
-            idx_name = self.transcript[0].split(".")[0]
+            idx_name = self.transcript.split(".")[0]
 
         idx = run(["kallisto", "index", "-i", f"index/{idx_name}.idx",
                    f"index/{self.transcript[0]}"], capture_output=True, text=True)
@@ -120,17 +120,20 @@ class TestIndexTranscript:
                 except Exception as ex:
                     self.logger.info(ex)
                     exit()
+                return self.index
             else:
-                if self.transcript[0].lower() == "mmu":
+                if self.transcript.lower() == "mmu":
                     self.__download_mmu_trscript()
                     self.create_index()
                     self.logger.info("Mmu transcript downloaded and index created.")
                     self.__check_index()
-                elif self.transcript[0].lower() == "hsa":
+                    return self.index
+                elif self.transcript.lower() == "hsa":
                     self.__download_hsa_transcript()
                     self.create_index()
                     self.logger.info("Hsa transcript downloaded and index created.")
                     self.__check_index()
+                    return self.index
                 else:
                     self.logger.info("Species or format not supported. \
                         Select hsa or mmu, or download your own transcript.")

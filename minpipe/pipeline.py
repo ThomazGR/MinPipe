@@ -4,6 +4,9 @@ from pathlib import Path
 from os import makedirs
 import logging
 import warnings
+
+from check import TestIndexTranscript, TestSamples
+from libinst import CheckLibs
 # import re
 
 
@@ -53,20 +56,6 @@ class PipelineCreator:
 
     def __enter__(self):
         # find_format_path = re.compile(r"[a-zA-Z0-9-_]*/[a-zA-Z0-9-]*(\.fa\.gz|\.fq\.gz|\.fastq\.gz|\.fasta\.gz)")
-        # if all(
-        #        bool(re.search(find_format_path, sample))
-        #        for sample in self.samples
-        # ):
-        #    self.format = format
-        #    self.input = input
-        return self
-
-    def __start(self) -> None:
-        """
-        Start every parameter that has not been passed, e.g. file_format, output path, build directories and logger
-        handler. Also checking input directory to be right.
-        :return: None
-        """
         if self.format is None:
             self.__decide_format()
 
@@ -137,7 +126,18 @@ class PipelineCreator:
         self.logger.info(f"Input path: {self.input}")
         self.logger.info(f"Output path: {self.output}")
 
-        pass
+        lib_is_installed = CheckLibs(self.logger)
+        lib_is_installed.check_all()
+        
+        test_index_transc = TestIndexTranscript(self.logger, transcript=self.transcript, index=self.index)
+        index = test_index_transc.check_idx_trans()
+        if ".idx" in index: self.index = index
+
+        test_samples = TestSamples(self.logger, single=self.logger, complement=self.complement, 
+                                    samples=self.samples, file_format=self.format)
+        test_samples.read_samples()
+
+        return self
 
     def __run_paired(self) -> None:
         """
