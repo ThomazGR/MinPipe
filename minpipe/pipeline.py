@@ -136,7 +136,7 @@ class PipelineCreator:
         index = test_index_transc.check_idx_trans()
         if ".idx" in index: self.index = index
 
-        test_samples = TestSamples(self.logger, single=self.logger, complement=self.complement, 
+        test_samples = TestSamples(self.logger, single=self.single, complement=self.complement, 
                                     samples=self.samples, file_format=self.format)
         test_samples.read_samples()
 

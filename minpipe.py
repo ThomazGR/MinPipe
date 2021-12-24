@@ -1,13 +1,8 @@
 import argparse
 from pathlib import Path
 
-from minpipe.json.support import json_parse
-from minpipe.yaml.support import yaml_parse
-
-#from minpipe.pipeline import PipelineCreator
-#from minpipe.check import TestIndexTranscript, TestSamples
-#from minpipe.libinst import CheckLibs
-#from minpipe.quality import ExtensiveQC
+from minpipe.parser import json, yaml
+from minpipe.pipeline import PipelineCreator
 
 def main():
     # # # # # # # # # # # # # # # # # #
@@ -58,7 +53,7 @@ def main():
             print(fnfe)
             quit()
         print("Json file found. Proceeding with Json parser for arguments.")
-        lst_args = json_parse(args.json[0])
+        lst_args = json.json_parse(args.json[0])
         args = parser.parse_args(lst_args)
     elif args.yaml is not None:
         try:
@@ -67,12 +62,16 @@ def main():
             print(fnfe)
             quit()
         print("YAML file found. Proceeding with YAML parser for arguments.")
-        lst_args = yaml_parse(args.yaml[0])
+        lst_args = yaml.yaml_parse(args.yaml[0])
         args = parser.parse_args(lst_args)
     else:
         pass
 
-    print(args)
+    pipe = PipelineCreator(samples=args.samples, single=args.single, complement=args.complement,
+        file_format=args.file_format, output_path=args.output_path, input_path=args.input_path,
+        index=args.index, transcript=args.transcript, threads=args.threads, bootstrap=args.bootstrap,
+        min_len=args.min_len, quality=args.quality, ext_qc=args.ext_qc)
+    pipe.run_full() #min_len, quality, ext_qc, bootstrap, threads
 
     return
 
