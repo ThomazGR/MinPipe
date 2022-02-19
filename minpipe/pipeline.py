@@ -8,7 +8,6 @@ import warnings
 from check import TestIndexTranscript, TestSamples
 from libinst import CheckLibs
 from quality import ExtensiveQC
-# import re
 
 
 class PipelineCreator:
