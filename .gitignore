@@ -142,6 +142,8 @@ dmypy.json
 
 # samples
 input/*.json
+input/*.yaml
+input/*.txt
 
 *.fq.gz
 *.fastq.gz
