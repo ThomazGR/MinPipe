@@ -45,11 +45,11 @@ MinPipe is a minimal but fully logged pipeline or workflow to be used for a seri
 	```
 
 ### Using the main pipeline
-- Run `python3 main.py -h` or `python3 main.py --help` for a help message
+- Run `python3 minpipe.py -h` or `python3 minpipe.py --help` for a help message
 - Example of paired-ended analysis without pre-built index: 
-	- `python3 main.py -c _read1 _read2 -s AT1_G1 AT2_G1 AT1_G2 AT2_G2 -t MMU_39.fastq.gz --threads 4 -b 100`
+	- `python3 minpipe.py -c _read1 _read2 -s AT1_G1 AT2_G1 AT1_G2 AT2_G2 -t MMU_39.fastq.gz --threads 4 -b 100`
 - Example of single-ended analysis with pre-built index: 
-	- `python3 main.py -s AT1_G1 AT2_G1 AT1_G2 AT2_G2 -i MMU_39.idx --threads 4 -b 100`
+	- `python3 minpipe.py -s AT1_G1 AT2_G1 AT1_G2 AT2_G2 -i MMU_39.idx --threads 4 -b 100`
 #### Arguments
 - -c or --complement is the complement for paired-ended file names, if read 1 is always sample_R1.fq.gz and read 2 is sample_R2.fq.gz use `-c _R1 _R2` or `--complement _R1 _R2` so the code will iterate over samples with this complementary name.
 - -s or --samples is the list of samples used to integrate with complement and iterate in the directory, e.g. `-s sample1 sample2 sample3` or `--sample sample1 sample2 sample3` the program will iterate as `sample1_R1.fq.gz` and `sample1_R2.fq.gz` as paired-ended.
@@ -63,8 +63,8 @@ MinPipe is a minimal but fully logged pipeline or workflow to be used for a seri
 - --yaml pass the YAML/YML file name that has to be located inside the input folder. The user can do the same as the Json file creating folders, e.g. input/params/parameters.yml.
 
 ### How to work with Kallisto results using Sleuth R package
-- Run `Rscript runSleuth.R [arguments]`
-- Pass `Rscript runSleuth.R -h` to see the help text
+- Run `Rscript minpipe.R [arguments]`
+- Pass `Rscript minpipe.R -h` to see the help text
 #### Arguments
 - -f or --file is the argument needed for the metadata.txt, passing as a path/to/metadata.txt
 - -g or --groups needs to be passed in order of base comparison comma-separated, e.g. CT,HFD,HFDCB
