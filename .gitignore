@@ -151,3 +151,5 @@ input/*.txt
 
 # Hide all results from scripts
 results*/
+
+.example_args
