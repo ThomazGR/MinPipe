@@ -74,21 +74,6 @@ start.metadata <- function(file = NULL, separator = NULL) {
     } else {
        metadata <- read.table(file, sep = separator, header = T, stringsAsFactors = F)
     }
-    #setwd(path.expand("~/"))
-
-    # metadata <- dplyr::mutate(metadata,
-    #                           path = file.path(args$results, "3_kallisto_results",
-    #                                            Run_s, "abundance.h5"))
-    # metadata <- dplyr::rename(metadata, sample = Run_s)
-
-    # if (is.null(args$groups[[1]])) {
-    #     groups <- unique(metadata$treatment)
-    # } else {
-    #     groups <- strsplit(args$groups, ",")[[1]]
-    # }
-    # volcano <- !args[["--no-volcano"]]
-
-    #return(list(metadata = metadata, groups = groups, volcano = volcano))
     return(metadata)
 }
 
@@ -341,23 +326,6 @@ generateBubble <- function(data = NULL, save_path = NULL){
 
 # Main paths
 arg <- create.args()
-#Example args
-# arg <- list(
-#   "path"="~/Documents/Projects/results_marcio/3_kallisto_results",
-#   "no_volcano"=FALSE,
-#   "file"="~/Documents/Projects/metadata_marcio.txt",
-#   "organism"="mmu",
-#   "results"="~/Documents/Projects/results_marcio/stats_results"
-#   "separator"=";"
-# )
-
-# arg <- list(
-#   "path"="C:/Users/Thomaz/Desktop/3_kallisto_results",
-#   "no_volcano"=FALSE,
-#   "file"="C:/Users/Thomaz/Desktop/3_kallisto_results/metadata_marcio.txt",
-#   "organism"="mmu",
-#   "results"="C:/Users/Thomaz/Desktop/3_kallisto_results/statistical_analysis"
-# )
 
 `%notin%` <- Negate(`%in%`)
 
@@ -374,23 +342,19 @@ if (!dir.exists(arg$results)) {
 # # # # # # # # # # # # # # #
 if (arg$organism %notin% c("mmu", "hsa")) { stop("-o/--organism not supported, please use only for hsa or mmu.") }
 
-# TODO: #13 Metadata checker and path slices/modifier if needed
 # # # # # # # # # # # # # # # # # # # # # # # #
 # Check if metadata is a google spreadsheets  #
 # # # # # # # # # # # # # # # # # # # # # # # #
-# if (!grepl("https://docs.google.com/spreadsheets", args$file, fixed = T) &
-#     !grepl("output=csv", args$file, fixed = T) &
-#     substr(arg[["--file"]], nchar(arg[["--file"]]) - 4 + 1, nchar(arg[["--file"]])) != ".txt") {
-#     stop("Metadata has to be a metadata.txt file. Take a look at the example in the Github repo.")
-# }
+if (substr(arg$file, nchar(arg$file) - 4 + 1, nchar(arg$file)) != ".txt") {
+    stop("Metadata has to be a metadata.txt file. Take a look at the example in the Github repo.")
+}
 
 # # # # # # # # # # # # # # # # #
 # Remove / from path if needed  #
 # # # # # # # # # # # # # # # # #
-# if (substr(arg$path, nchar(arg$path), nchar(arg$path)) == "/") {
-#     arg$path <- substr(arg$path, 1, nchar(arg$path) - 1)
-#     arg[["--path"]] <- substr(arg$path, 1, nchar(arg$path) - 1)
-# } else { }
+if (substr(arg$path, nchar(arg$path), nchar(arg$path)) == "/") {
+    arg$path <- substr(arg$path, 1, nchar(arg$path) - 1)
+} else { }
 
 metadata_df <- start.metadata(file = arg$file, separator=arg$separator)
 
