@@ -13,19 +13,25 @@ class TestSamples:
 
     def read_samples(self) -> None:
         if self.single and self.complement is not None:
-            self.logger.info("Single-ended analysis does not contain complements. \
-                Complements are for paired-ended (e.g. sample1_R1.fastq.gz and sample1_R2.fastq.gz)")
+            self.logger.info(
+                "Single-ended analysis does not contain complements. \
+                Complements are for paired-ended (e.g. sample1_R1.fastq.gz and sample1_R2.fastq.gz)"
+            )
             exit()
         elif not self.single and self.complement is not None:
             if len(self.complement) > 2:
-                self.logger.info("Complement (-c or --complement) argument has to be maximum \
-                    of 2 for paired-ended reads.")
+                self.logger.info(
+                    "Complement (-c or --complement) argument has to be maximum \
+                    of 2 for paired-ended reads."
+                )
                 exit()
 
         if not self.single:
             for file in self.samples:
-                if Path(f"input/{file}{self.complement[0]}{self.format}").is_file() \
-                        and Path(f"input/{file}{self.complement[1]}{self.format}").is_file():
+                if (
+                    Path(f"input/{file}{self.complement[0]}{self.format}").is_file()
+                    and Path(f"input/{file}{self.complement[1]}{self.format}").is_file()
+                ):
                     pass
                 else:
                     self.logger.info(f"File {file} does not exist in input/ folder.")
@@ -52,11 +58,17 @@ class TestIndexTranscript:
 
     def __download_hsa_transcript(self) -> None:
         try:
-            run([
-                "wget", "-P", "index/", "-c",
-                "http://ftp.ensembl.org/pub/release-104/fasta/homo_sapiens/cdna/Homo_sapiens.GRCh38.cdna.all.fa.gz",
-                "-O", "index/homo_sapiens_GRCh38_cdna.fa.gz"
-            ])
+            run(
+                [
+                    "wget",
+                    "-P",
+                    "index/",
+                    "-c",
+                    "http://ftp.ensembl.org/pub/release-104/fasta/homo_sapiens/cdna/Homo_sapiens.GRCh38.cdna.all.fa.gz",
+                    "-O",
+                    "index/homo_sapiens_GRCh38_cdna.fa.gz",
+                ]
+            )
         except Exception as exc:
             self.logger.info(exc)
             quit()
@@ -68,11 +80,17 @@ class TestIndexTranscript:
 
     def __download_mmu_trscript(self) -> None:
         try:
-            run([
-                "wget", "-P", "index/", "-c",
-                "http://ftp.ensembl.org/pub/release-104/fasta/mus_musculus/cdna/Mus_musculus.GRCm39.cdna.all.fa.gz",
-                "-O", "index/mus_musculus_GRCm39_cdna.fa.gz"
-            ])
+            run(
+                [
+                    "wget",
+                    "-P",
+                    "index/",
+                    "-c",
+                    "http://ftp.ensembl.org/pub/release-104/fasta/mus_musculus/cdna/Mus_musculus.GRCm39.cdna.all.fa.gz",
+                    "-O",
+                    "index/mus_musculus_GRCm39_cdna.fa.gz",
+                ]
+            )
         except Exception as exc:
             self.logger.info(exc)
             quit()
@@ -96,8 +114,17 @@ class TestIndexTranscript:
         else:
             idx_name = self.transcript.split(".")[0]
 
-        idx = run(["kallisto", "index", "-i", f"index/{idx_name}.idx",
-                   f"index/{self.transcript[0]}"], capture_output=True, text=True)
+        idx = run(
+            [
+                "kallisto",
+                "index",
+                "-i",
+                f"index/{idx_name}.idx",
+                f"index/{self.transcript[0]}",
+            ],
+            capture_output=True,
+            text=True,
+        )
         self.logger.info(idx.stdout)
         self.logger.info(idx.stderr)
 
@@ -110,9 +137,10 @@ class TestIndexTranscript:
             self.logger.info("No index or transcript has been passed")
             exit()
         elif self.index is None and self.transcript:
-            if any(fmt in self.transcript[0] for fmt in ['.fa', '.fa.gz',
-                                                         '.fastq', '.fastq.gz',
-                                                         '.fq', '.fq.gz']):
+            if any(
+                fmt in self.transcript[0]
+                for fmt in [".fa", ".fa.gz", ".fastq", ".fastq.gz", ".fq", ".fq.gz"]
+            ):
                 try:
                     self.create_index()
                     self.logger.info("Index created")
@@ -135,8 +163,10 @@ class TestIndexTranscript:
                     self.__check_index()
                     return self.index
                 else:
-                    self.logger.info("Species or format not supported. \
-                        Select hsa or mmu, or download your own transcript.")
+                    self.logger.info(
+                        "Species or format not supported. \
+                        Select hsa or mmu, or download your own transcript."
+                    )
                     exit()
         elif self.index and self.transcript is None:
             try:
@@ -145,9 +175,11 @@ class TestIndexTranscript:
                 self.logger.info(ex)
                 exit()
         else:
-            self.logger.info("You can only pass `--index` or `--transcript` argument. \
+            self.logger.info(
+                "You can only pass `--index` or `--transcript` argument. \
                 If both are passed the pipeline don't know if needs to build another index with \
-                    the transcript passed or use the index without building a new one.")
+                    the transcript passed or use the index without building a new one."
+            )
             exit()
 
         pass
