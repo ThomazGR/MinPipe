@@ -1,48 +1,10 @@
 # MinPipe <a href="https://github.com/ThomazGR/MinPipe"> <img align="right" src="./img/minpipe.png"> </a>
-MinPipe is a minimal but fully logged pipeline or workflow to be used for a series of RNA-seq data analysis from raw data to differentially expressed genes by using a mixture of pure Python, R and Shell script mainly for workspace management.
+MinPipe is a minimal but fully logged pipeline or workflow to be used for a series of RNA-seq data analysis from raw data to differentially expressed genes by using a mixture of Python, R and Shell script mainly for workspace management.
 
 ### Installing
-- Install Conda or Miniconda by using the `conda.sh` inside `src` folder
-	- Run `bash conda.sh`, and follow the next steps
-- Activate Bioconda channel by running `packages.sh` inside `src` folder
-	- Run `bash packages.sh`, and follow the next steps
-- Install R in [Linux](https://cran.r-project.org/bin/linux/) selecting your distro and following the steps provided by R Project
-	- If you are using a Ubuntu based distribution follow the next steps:
-		- Run
-		```
-		sudo apt update -qq
-		sudo apt install --no-install-recommends software-properties-common dirmngr
-		wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | sudo tee -a /etc/apt/trusted.gpg.d/cran_ubuntu_key.asc
-		sudo add-apt-repository "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"
-		sudo apt install --no-install-recommends r-base r-base-dev
-		sudo apt install libxml2-dev libcurl4-openssl-dev libssl-dev
-		```
-- Install Bioconductor Manager
-	- Open an R session and run:
-	```{r}
-	if (!requireNamespace("BiocManager", quietly = TRUE))
-		install.packages("BiocManager")
-	```
-	- And then 
-	```{r}
-	BiocManager::install(version = "3.13")
-	```
-- Via BiocManager install all packages used
-	- Run 
-	```{r}
-	BiocManager::install(c("biomaRt", "rhdf5", "ggplot2","clusterProfiler",
-	"dplyr","org.Hs.eg.db","org.Mm.eg.db"))
-	```
-- Install devtools R package and docopt for CLI R interface for args
-	- Run
-	```{r}
-	install.packages(c("devtools", "docopt"))
-	```
-- Via devtools install Sleuth
-	- Install via this command 
-	```{r}
-	devtools::install_github("pachterlab/sleuth")
-	```
+Rewritten version of installers include:
+- env.yml: The yaml file that sets specification for environment building used in miniconda/mamba. It lists all needed packages to run every part of MinPipe.
+- installers/conda.sh: A shell script to download and install miniconda, mamba and create the needed environment. Go to the project root directory and run `bash installers/conda.sh`. 
 
 ### Using the main pipeline
 - Run `python3 minpipe.py -h` or `python3 minpipe.py --help` for a help message
@@ -67,9 +29,9 @@ MinPipe is a minimal but fully logged pipeline or workflow to be used for a seri
 - Pass `Rscript minpipe.R -h` to see the help text
 #### Arguments
 - -f or --file is the argument needed for the metadata.txt, passing as a path/to/metadata.txt
-- -g or --groups needs to be passed in order of base comparison comma-separated, e.g. CT,HFD,HFDCB
 - -o or --organism is the name of the organism to be used for gene annotation, either `mmu` or `hsa`, others will be supported lately
-- -p or --path is the directory to save all images and tables
-- -r or --results is the name of the results folder created by the main pipeline
+- -p or --path is the path/to/kallisto/results where it would have SAMPLE_FOLDER/abundance.h5 files.
+- -r or --results is the name of the path/to/save/results for tables and visualization.
+- -s or --separator string used as a separator for metadata file. Default is ;
 - --no-volcano is a flag that will force no volcano image creation
 
