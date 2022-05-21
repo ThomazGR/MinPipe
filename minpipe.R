@@ -1,8 +1,8 @@
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # Motivation: Automated way of finding differentially expressed genes for every match
 # Author: Thomaz Guadagnini
-# Github: @ThomazGR
-# Email: thomaz@tutanota.de
+# Github: @tzgr
+# Email: thzgr@tuta.io
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 suppressMessages({
@@ -27,7 +27,7 @@ create.args <- function() {
     Options:
         -h --help     Show this screen.
 
-        -f <file> --file <file>     path/for/metadata.txt in a format of te following:
+        -f <file> --file <file>     path/for/metadata.txt in a format following:
             |-------|-----------|
             | Run_s | treatment |
             |-------|-----------|
