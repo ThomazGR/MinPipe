@@ -1,8 +1,8 @@
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # Motivation: Automated way of finding differentially expressed genes for every match
 # Author: Thomaz Guadagnini
-# Github: @ThomazGR
-# Email: thomaz@tutanota.de
+# Github: @tzgr
+# Email: thzgr@tuta.io
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 suppressMessages({
