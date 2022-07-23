@@ -43,8 +43,6 @@ create.args <- function() {
 
         -r <results> --results <results> path/to/save/results for tables and visualization.
     
-        -s <separator> --separator <separator> String used as a separator for metadata file. Default is ;
-
         --no-volcano  Does not build volcano.
     " -> doc
 
@@ -326,6 +324,14 @@ generateBubble <- function(data = NULL, save_path = NULL){
 
 # Main paths
 arg <- create.args()
+# Example of `arg` variable after building it with docopt.
+# arg <- list(
+#     results = "/home/thzgr/Projects/results",
+#     file = "/home/thzgr/Projects/metadata.txt",
+#     path = "/home/thzgr/Projects/samples",
+#     organism = "mmu",
+#     no_volcano = FALSE
+# )
 
 `%notin%` <- Negate(`%in%`)
 
@@ -356,7 +362,7 @@ if (substr(arg$path, nchar(arg$path), nchar(arg$path)) == "/") {
     arg$path <- substr(arg$path, 1, nchar(arg$path) - 1)
 } else { }
 
-metadata_df <- start.metadata(file = arg$file, separator=arg$separator)
+metadata_df <- start.metadata(file = arg$file, separator=";")
 
 import_matrix <- import.kallisto.tx(base_path = arg$path, metadata = metadata_df)
 

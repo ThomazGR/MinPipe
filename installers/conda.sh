@@ -8,15 +8,16 @@
 # Email: thzgr@tuta.io
 
 if ! [ -x "$(command -v conda)" ]; then
+	HOME_PATH="$(echo $HOME)"
     wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh
     bash ~/miniconda.sh -b -p $HOME/miniconda
     
-    CONDA_BIN="$HOME/miniconda/bin/conda"
+    CONDA_BIN="$HOME_PATH/miniconda/bin/conda"
     
     if [ -f "$CONDA_BIN" ]; then
-        cd ~/miniconda/bin
+        cd $HOME_PATH/miniconda/bin
         ./conda init
-        source ~/.bashrc
+        source $HOME_PATH/.bashrc
         printf "Conda has been installed and initialized!"
     else
         printf "Conda has not been installed :("
@@ -34,4 +35,12 @@ else
 
 mamba env create -f ../env.yml
 
-mamba activate minpipe
+mamba init
+
+conda activate minpipe
+
+conda remove --force bioconductor-do.db
+
+R -e 'if (!require("BiocManager", quietly = TRUE)) install.packages("BiocManager")'
+R -e 'BiocManager::install(version = "3.14")'
+R -e 'BiocManager::install("DO.db")'
